@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Era UI Mock - Journeyer Style</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --journeyer-blue: #00BFFF;
+      --journeyer-light: #e6f9ff;
+    }
+
+    body {
+      background-color: #ffffff;
+      font-family: 'Helvetica Neue', sans-serif;
+    }
+
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-title {
+      font-weight: bold;
+      color: var(--journeyer-blue);
+    }
+
+    .btn-primary {
+      background-color: var(--journeyer-blue);
+      border-color: var(--journeyer-blue);
+      border-radius: 8px;
+    }
+
+    .btn-primary:hover {
+      background-color: #00a5dd;
+      border-color: #00a5dd;
+    }
+
+    .btn-dark {
+      background-color: #006b91;
+      border-color: #006b91;
+      border-radius: 8px;
+    }
+
+    textarea, input, select {
+      border-radius: 6px !important;
+    }
+
+    .bg-secondary {
+      background-color: var(--journeyer-light) !important;
+    }
+
+    .progress-bar.bg-warning {
+      background-color: #ffd54f !important;
+    }
+
+    .progress-bar.bg-info {
+      background-color: #4fc3f7 !important;
+    }
+
+    .progress-bar.bg-secondary {
+      background-color: var(--journeyer-blue) !important;
+    }
+
+    .list-group-item {
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <div class="row g-4">
+
+      <!-- ログイン -->
+      <div class="col-md-4">
+        <div class="card p-4">
+          <h5 class="card-title">Era</h5>
+          <input type="text" class="form-control mb-3" placeholder="電話番号 or パスコード">
+          <button class="btn btn-primary w-100" onclick="alert('ログインしました')">ログイン</button>
+        </div>
+      </div>
+
+      <!-- あなたの作業 -->
+      <div class="col-md-4">
+        <div class="card p-4">
+          <h5 class="card-title">あなたの作業</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item text-warning">🔧 タスクA（進行中）</li>
+            <li class="list-group-item text-info">📋 タスクB（未着手）</li>
+            <li class="list-group-item text-danger">⛔ タスクC（遅延）</li>
+          </ul>
+          <button class="btn btn-primary mt-3 w-100" onclick="alert('目標完了')">目標を完了</button>
+        </div>
+      </div>
+
+      <!-- 作業詳細 -->
+      <div class="col-md-4">
+        <div class="card p-4">
+          <h5 class="card-title">記事の網取付</h5>
+          <textarea class="form-control mb-3" placeholder="メモを書く..."></textarea>
+          <input type="file" class="form-control mb-3">
+          <button class="btn btn-primary w-100" onclick="alert('作業を完了しました')">作業を完了</button>
+        </div>
+      </div>
+
+      <!-- 工程管理 -->
+      <div class="col-md-4">
+        <div class="card p-4">
+          <h5 class="card-title">工程管理</h5>
+          <label>タスクA</label>
+          <div class="progress mb-2"><div class="progress-bar bg-warning" style="width: 30%"></div></div>
+          <label>タスクB</label>
+          <div class="progress mb-2"><div class="progress-bar bg-info" style="width: 60%"></div></div>
+          <label>タスクC</label>
+          <div class="progress mb-2"><div class="progress-bar bg-secondary" style="width: 80%"></div></div>
+        </div>
+      </div>
+
+      <!-- 職人を配属 -->
+      <div class="col-md-4">
+        <div class="card p-4">
+          <h5 class="card-title">職人を配属</h5>
+          <select class="form-select mb-2">
+            <option>3月3日（日）</option>
+          </select>
+          <select class="form-select mb-3">
+            <option>作業：作業内容4</option>
+          </select>
+          <button class="btn btn-dark w-100" onclick="alert('配属しました')">配属</button>
+        </div>
+      </div>
+
+      <!-- お知らせ投稿 -->
+      <div class="col-md-4">
+        <div class="card p-4">
+          <h5 class="card-title">お知らせを投稿</h5>
+          <textarea class="form-control mb-3" placeholder="連絡事項を入力..."></textarea>
+          <button class="btn btn-primary w-100" onclick="alert('お知らせを配信しました')">配信</button>
+        </div>
+      </div>
+
+      <!-- 画像枠 -->
+      <div class="col-md-4">
+        <div class="card p-4 text-center">
+          <h5 class="card-title">画像エリア</h5>
+          <div class="bg-secondary mb-3" style="height: 120px;"></div>
+          <button class="btn btn-dark w-100" onclick="alert('お知らせしました')">お知らせする</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
