@@ -6,11 +6,8 @@
   <title>統合管理ダッシュボード</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css">
   <style>
-    :root {
-      --bs-primary: #00BFFF !important;
-    }
+    :root { --bs-primary: #00BFFF !important; }
     .kanban-column {
       width: 32%;
       background: #f0faff;
@@ -26,66 +23,118 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       border-left: 5px solid #00BFFF;
     }
-    #gantt-target {
-      overflow-x: auto;
-    }
   </style>
 </head>
 <body>
 <div class="container py-4">
   <h1>統合管理ダッシュボード</h1>
 
-  <div class="btn-group mb-4" role="group">
+  <div class="btn-group mb-3">
     <button class="btn btn-outline-primary" onclick="showSection('form')">タスク作成</button>
     <button class="btn btn-outline-primary" onclick="showSection('list')">リスト表示</button>
-    <button class="btn btn-outline-primary" onclick="showSection('kanban')">カンバン表示</button>
-    <button class="btn btn-outline-primary" onclick="showSection('gantt')">ガント表示</button>
   </div>
 
-  <a href="/admin" class="btn btn-link mt-4">← ホームに戻る</a>
+  <!-- フォーム -->
+  <div id="section-form">
+    <form id="taskForm">
+      <input type="hidden" id="editId">
+      <div class="mb-2"><label>タスク名</label><input class="form-control" id="taskName" required></div>
+      <div class="mb-2"><label>担当者</label><input class="form-control" id="taskAssignee" required></div>
+      <div class="mb-2"><label>開始日</label><input type="date" class="form-control" id="taskStart" required></div>
+      <div class="mb-2"><label>期限</label><input type="date" class="form-control" id="taskEnd" required></div>
+      <div class="mb-2"><label>ステータス</label>
+        <select class="form-select" id="taskStatus">
+          <option value="ToDo">ToDo</option>
+          <option value="進行中">進行中</option>
+          <option value="完了">完了</option>
+        </select>
+      </div>
+      <div class="mb-2"><label>進捗 (%)</label><input type="number" class="form-control" id="taskProgress" min="0" max="100" value="0"></div>
+      <div class="mb-2"><label>タグ</label><input class="form-control" id="taskTags"></div>
+      <div class="mb-2"><label>備考</label><textarea class="form-control" id="taskNotes"></textarea></div>
+      <button type="submit" class="btn btn-primary">保存</button>
+    </form>
+  </div>
+
+  <!-- 一覧 -->
+  <div id="section-list" style="display:none;">
+    <table class="table mt-4">
+      <thead><tr><th>タスク名</th><th>担当者</th><th>開始</th><th>期限</th><th>ステータス</th><th>進捗</th><th>操作</th></tr></thead>
+      <tbody id="taskTableBody"></tbody>
+    </table>
+  </div>
+
+  <a href="/admin" class="btn btn-link mt-3">← ホームに戻る</a>
 </div>
 
-<script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.min.js"></script>
 <script>
-  const tasks = [
-    {
-      id: 1,
-      name: "基礎工事",
-      assignee: "佐藤",
-      start: "2025-08-01",
-      end: "2025-08-10",
-      progress: 40,
-      tags: ["工程A", "重要"],
-      notes: "地盤調査完了後に開始",
-      status: "ToDo"
-    },
-    {
-      id: 2,
-      name: "足場組立",
-      assignee: "田中",
-      start: "2025-08-05",
-      end: "2025-08-15",
-      progress: 60,
-      tags: ["安全", "外構"],
-      notes: "足場資材の在庫確認済み",
-      status: "進行中"
-    },
-    {
-      id: 3,
-      name: "配管工事",
-      assignee: "佐藤",
-      start: "2025-08-10",
-      end: "2025-08-20",
-      progress: 0,
-      tags: ["水道", "住宅"],
-      notes: "施工図面を確認すること",
-      status: "完了"
-    }
-  ];
+let tasks = [
+  { id: 1, name: "基礎工事", assignee: "佐藤", start: "2025-08-01", end: "2025-08-10", status: "ToDo", progress: 40, tags: ["重要"], notes: "開始前に地盤調査" },
+  { id: 2, name: "足場組立", assignee: "田中", start: "2025-08-05", end: "2025-08-15", status: "進行中", progress: 60, tags: ["外構"], notes: "資材確認済" }
+];
 
-  function showSection(name) {
-    document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+document.getElementById("taskForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const id = document.getElementById("editId").value;
+  const task = {
+    id: id ? parseInt(id) : Date.now(),
+    name: document.getElementById("taskName").value,
+    assignee: document.getElementById("taskAssignee").value,
+    start: document.getElementById("taskStart").value,
+    end: document.getElementById("taskEnd").value,
+    status: document.getElementById("taskStatus").value,
+    progress: parseInt(document.getElementById("taskProgress").value),
+    tags: document.getElementById("taskTags").value.split(',').map(t => t.trim()),
+    notes: document.getElementById("taskNotes").value
+  };
+
+  if (id) {
+    const index = tasks.findIndex(t => t.id === parseInt(id));
+    tasks[index] = task;
+  } else {
+    tasks.push(task);
   }
+
+  e.target.reset();
+  document.getElementById("editId").value = "";
+  renderTasks();
+  showSection("list");
+});
+
+function renderTasks() {
+  const tbody = document.getElementById("taskTableBody");
+  tbody.innerHTML = "";
+  tasks.forEach(task => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${task.name}</td><td>${task.assignee}</td><td>${task.start}</td><td>${task.end}</td>
+      <td>${task.status}</td><td>${task.progress}%</td>
+      <td><button class="btn btn-sm btn-outline-primary" onclick="editTask(${task.id})">編集</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function editTask(id) {
+  const task = tasks.find(t => t.id === id);
+  document.getElementById("editId").value = task.id;
+  document.getElementById("taskName").value = task.name;
+  document.getElementById("taskAssignee").value = task.assignee;
+  document.getElementById("taskStart").value = task.start;
+  document.getElementById("taskEnd").value = task.end;
+  document.getElementById("taskStatus").value = task.status;
+  document.getElementById("taskProgress").value = task.progress;
+  document.getElementById("taskTags").value = task.tags.join(', ');
+  document.getElementById("taskNotes").value = task.notes;
+  showSection("form");
+}
+
+function showSection(section) {
+  document.getElementById("section-form").style.display = (section === 'form') ? 'block' : 'none';
+  document.getElementById("section-list").style.display = (section === 'list') ? 'block' : 'none';
+}
+
+renderTasks();
 </script>
 </body>
 </html>
