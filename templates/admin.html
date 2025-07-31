@@ -3,37 +3,17 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>統合管理ダッシュボード（拡張版）</title>
+  <title>統合管理ダッシュボード</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css">
   <style>
-<style>
-  :root {
-    --bs-primary: #00BFFF !important;
-  }
-  .kanban-column {
-    width: 32%;
-    background: #f0faff;
-    padding: 10px;
-    margin-right: 1%;
-    border-radius: 5px;
-  }
-  .kanban-card {
-    background: white;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border-left: 5px solid #00BFFF;
-  }
-  #gantt-target {
-    overflow-x: auto;
-  }
-</style>
+    :root {
+      --bs-primary: #00BFFF !important;
+    }
     .kanban-column {
       width: 32%;
-      background: #f8f9fa;
+      background: #f0faff;
       padding: 10px;
       margin-right: 1%;
       border-radius: 5px;
@@ -44,6 +24,7 @@
       margin-bottom: 10px;
       border-radius: 5px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-left: 5px solid #00BFFF;
     }
     #gantt-target {
       overflow-x: auto;
@@ -52,7 +33,7 @@
 </head>
 <body>
 <div class="container py-4">
-  <h1>統合管理ダッシュボード（拡張版）</h1>
+  <h1>統合管理ダッシュボード</h1>
 
   <div class="btn-group mb-4" role="group">
     <button class="btn btn-outline-primary" onclick="showSection('form')">タスク作成</button>
@@ -61,160 +42,49 @@
     <button class="btn btn-outline-primary" onclick="showSection('gantt')">ガント表示</button>
   </div>
 
-  <!-- タスク作成フォーム -->
-  <div id="section-form" class="section mb-5">
-    <form id="taskForm">
-      <div class="mb-3"><label class="form-label">タスク名</label><input type="text" class="form-control" id="taskName" required></div>
-      <div class="mb-3"><label class="form-label">担当者</label><input type="text" class="form-control" id="taskAssignee" required></div>
-      <div class="mb-3"><label class="form-label">開始日</label><input type="date" class="form-control" id="taskStart" required></div>
-      <div class="mb-3"><label class="form-label">期限</label><input type="date" class="form-control" id="taskEnd" required></div>
-      <div class="mb-3"><label class="form-label">進捗（％）</label><input type="range" class="form-range" id="taskProgress" min="0" max="100" value="0" oninput="progressValue.innerText = this.value + '%'"><div id="progressValue">0%</div></div>
-      <div class="mb-3"><label class="form-label">タグ（カンマ区切り）</label><input type="text" class="form-control" id="taskTags"></div>
-      <div class="mb-3"><label class="form-label">備考</label><textarea class="form-control" id="taskNotes" rows="2"></textarea></div>
-      <div class="mb-3"><label class="form-label">ステータス</label>
-        <select class="form-select" id="taskStatus" required>
-          <option value="ToDo">ToDo</option>
-          <option value="進行中">進行中</option>
-          <option value="完了">完了</option>
-        </select>
-      </div>
-      <button type="submit" class="btn btn-primary">作成</button>
-    </form>
-  </div>
-
-  <!-- リスト表示 -->
-  <div id="section-list" class="section" style="display:none;">
-    <h3>タスクリスト</h3>
-    <table class="table table-bordered">
-      <thead><tr><th>タスク名</th><th>担当者</th><th>期限</th><th>進捗</th><th>タグ</th></tr></thead>
-      <tbody id="taskTableBody"></tbody>
-    </table>
-  </div>
-
-  <!-- カンバン表示 -->
-  <div id="section-kanban" class="section d-flex justify-content-between" style="display:none;">
-    <div class="kanban-column"><h5>ToDo</h5><div id="todo-column"></div></div>
-    <div class="kanban-column"><h5>進行中</h5><div id="doing-column"></div></div>
-    <div class="kanban-column"><h5>完了</h5><div id="done-column"></div></div>
-  </div>
-
-  <!-- ガントチャート表示 -->
-  <div id="section-gantt" class="section" style="display:none;">
-    <h3>ガントチャート</h3>
-    <div id="gantt-target"></div>
-  </div>
-
-  <!-- タスク詳細表示 -->
-  <div id="section-detail" class="section" style="display:none;">
-    <h3>タスク詳細</h3>
-    <div class="card"><div class="card-body">
-      <h5 id="detailName" class="card-title"></h5>
-      <p><strong>担当者：</strong><span id="detailAssignee"></span></p>
-      <p><strong>開始日：</strong><span id="detailStart"></span></p>
-      <p><strong>期限：</strong><span id="detailEnd"></span></p>
-      <p><strong>進捗：</strong><span id="detailProgress"></span></p>
-      <p><strong>タグ：</strong><span id="detailTags"></span></p>
-      <p><strong>備考：</strong><span id="detailNotes"></span></p>
-      <p><strong>ステータス：</strong><span id="detailStatus"></span></p>
-      <button class="btn btn-secondary mt-2" onclick="showSection('list')">← 一覧に戻る</button>
-    </div></div>
-  </div>
-
-  <a href="admin_home.html" class="btn btn-link mt-4">← ホームに戻る</a>
+  <a href="/admin" class="btn btn-link mt-4">← ホームに戻る</a>
 </div>
 
 <script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.min.js"></script>
 <script>
-  const tasks = [];
-  let editId = null;
+  const tasks = [
+    {
+      id: 1,
+      name: "基礎工事",
+      assignee: "佐藤",
+      start: "2025-08-01",
+      end: "2025-08-10",
+      progress: 40,
+      tags: ["工程A", "重要"],
+      notes: "地盤調査完了後に開始",
+      status: "ToDo"
+    },
+    {
+      id: 2,
+      name: "足場組立",
+      assignee: "田中",
+      start: "2025-08-05",
+      end: "2025-08-15",
+      progress: 60,
+      tags: ["安全", "外構"],
+      notes: "足場資材の在庫確認済み",
+      status: "進行中"
+    },
+    {
+      id: 3,
+      name: "配管工事",
+      assignee: "佐藤",
+      start: "2025-08-10",
+      end: "2025-08-20",
+      progress: 0,
+      tags: ["水道", "住宅"],
+      notes: "施工図面を確認すること",
+      status: "完了"
+    }
+  ];
 
   function showSection(name) {
     document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
-    document.getElementById('section-' + name).style.display = name === 'kanban' ? 'flex' : 'block';
-    if (name === 'gantt') renderGantt();
-  }
-
-  document.getElementById("taskForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const task = {
-      id: editId ? editId : tasks.length + 1,
-      name: document.getElementById("taskName").value,
-      assignee: document.getElementById("taskAssignee").value,
-      start: document.getElementById("taskStart").value,
-      end: document.getElementById("taskEnd").value,
-      progress: parseInt(document.getElementById("taskProgress").value),
-      tags: document.getElementById("taskTags").value.split(',').map(t => t.trim()),
-      notes: document.getElementById("taskNotes").value,
-      status: document.getElementById("taskStatus").value
-    };
-    if (editId) {
-      const index = tasks.findIndex(t => t.id === editId);
-      if (index !== -1) tasks[index] = task;
-    } else {
-      tasks.push(task);
-    }
-    this.reset(); editId = null;
-    document.getElementById("progressValue").innerText = "0%";
-    renderTasks();
-  });
-
-  function renderTasks() {
-    renderList();
-    renderKanban();
-    renderGantt();
-  }
-
-  function renderList() {
-    const tbody = document.getElementById("taskTableBody");
-    tbody.innerHTML = "";
-    tasks.forEach(task => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td><a href="#" onclick="showDetail(${task.id})">${task.name}</a></td><td>${task.assignee}</td><td>${task.end}</td><td>${task.progress}%</td><td>${task.tags.join(', ')}</td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function renderKanban() {
-    const columns = {
-      "ToDo": document.getElementById("todo-column"),
-      "進行中": document.getElementById("doing-column"),
-      "完了": document.getElementById("done-column")
-    };
-    for (let col in columns) columns[col].innerHTML = "";
-
-    tasks.forEach(task => {
-      const card = document.createElement("div");
-      card.className = "kanban-card";
-      card.innerHTML = `<strong>${task.name}</strong><br><small>${task.assignee}</small><br><small>${task.tags.join(', ')}</small>`;
-      columns[task.status].appendChild(card);
-    });
-  }
-
-  function renderGantt() {
-    const gantt_tasks = tasks.map(t => ({
-      id: t.id,
-      name: t.name,
-      start: t.start,
-      end: t.end,
-      progress: t.progress,
-      custom_class: "bar"
-    }));
-    document.getElementById("gantt-target").innerHTML = "";
-    new Gantt("#gantt-target", gantt_tasks);
-  }
-
-  function showDetail(id) {
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-    document.getElementById("detailName").textContent = task.name;
-    document.getElementById("detailAssignee").textContent = task.assignee;
-    document.getElementById("detailStart").textContent = task.start;
-    document.getElementById("detailEnd").textContent = task.end;
-    document.getElementById("detailProgress").textContent = task.progress + "%";
-    document.getElementById("detailTags").textContent = task.tags.join(', ');
-    document.getElementById("detailNotes").textContent = task.notes;
-    document.getElementById("detailStatus").textContent = task.status;
-    showSection("detail");
   }
 </script>
 </body>
