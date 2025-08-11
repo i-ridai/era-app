@@ -1,140 +1,387 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>統合管理ダッシュボード</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Era 管理者：タスク作成 & 一覧（テーブル/カンバン/タイムライン/カレンダー）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Frappe Gantt -->
+  <link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css" />
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
   <style>
-    :root { --bs-primary: #00BFFF !important; }
+    :root { --bs-primary:#00BFFF !important; }
+    body { background:#fff; }
+    .view-switch .btn { min-width: 120px; }
     .kanban-column {
       width: 32%;
       background: #f0faff;
-      padding: 10px;
-      margin-right: 1%;
-      border-radius: 5px;
+      padding: 12px;
+      border-radius: 12px;
+      min-height: 60px;
+      border: 1px dashed #bfe9ff;
     }
+    .kanban-wrap { gap: 2%; }
     .kanban-card {
-      background: white;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border-left: 5px solid #00BFFF;
+      background: #fff;
+      border-left: 6px solid #00BFFF;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      padding: 12px;
+      margin-bottom: 12px;
+      cursor: grab;
     }
+    .kanban-card:active { cursor: grabbing; }
+    .badge-tag { background:#e8f7ff; border:1px solid #bfe9ff; color:#086ea1; }
+    #gantt { overflow-x:auto; }
+    .fc .fc-button-primary { background:#00BFFF;border-color:#00BFFF; }
+    .btn-icon {
+      border: none; background: transparent; padding: 2px 6px; line-height: 1;
+    }
+    .btn-icon:hover { background:#f2f8ff; border-radius: 6px; }
   </style>
 </head>
 <body>
 <div class="container py-4">
-  <h1>統合管理ダッシュボード</h1>
 
-  <div class="btn-group mb-3">
-    <button class="btn btn-outline-primary" onclick="showSection('form')">タスク作成</button>
-    <button class="btn btn-outline-primary" onclick="showSection('list')">リスト表示</button>
-  </div>
+  <h1 class="mb-4">Era 管理者ダッシュボード</h1>
 
-  <!-- フォーム -->
-  <div id="section-form">
-    <form id="taskForm">
-      <input type="hidden" id="editId">
-      <div class="mb-2"><label>タスク名</label><input class="form-control" id="taskName" required></div>
-      <div class="mb-2"><label>担当者</label><input class="form-control" id="taskAssignee" required></div>
-      <div class="mb-2"><label>開始日</label><input type="date" class="form-control" id="taskStart" required></div>
-      <div class="mb-2"><label>期限</label><input type="date" class="form-control" id="taskEnd" required></div>
-      <div class="mb-2"><label>ステータス</label>
-        <select class="form-select" id="taskStatus">
+  <!-- ===== 1. タスク作成フォーム ===== -->
+  <section id="section-create" class="mb-5">
+    <h4 class="mb-3">1 タスク作成</h4>
+    <form id="taskForm" class="row g-3">
+      <input type="hidden" id="editId" />
+      <div class="col-md-6">
+        <label class="form-label">タスク名</label>
+        <input type="text" id="taskName" class="form-control" required />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">担当者</label>
+        <input type="text" id="taskAssignee" class="form-control" required />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">ステータス</label>
+        <select id="taskStatus" class="form-select">
           <option value="ToDo">ToDo</option>
           <option value="進行中">進行中</option>
           <option value="完了">完了</option>
         </select>
       </div>
-      <div class="mb-2"><label>進捗 (%)</label><input type="number" class="form-control" id="taskProgress" min="0" max="100" value="0"></div>
-      <div class="mb-2"><label>タグ</label><input class="form-control" id="taskTags"></div>
-      <div class="mb-2"><label>備考</label><textarea class="form-control" id="taskNotes"></textarea></div>
-      <button type="submit" class="btn btn-primary">保存</button>
+      <div class="col-md-3">
+        <label class="form-label">開始日</label>
+        <input type="date" id="taskStart" class="form-control" required />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">期限</label>
+        <input type="date" id="taskEnd" class="form-control" required />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">進捗 (%)</label>
+        <input type="number" id="taskProgress" min="0" max="100" value="0" class="form-control" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">タグ（カンマ区切り）</label>
+        <input type="text" id="taskTags" class="form-control" placeholder="高優先, 設備" />
+      </div>
+      <div class="col-12">
+        <label class="form-label">備考</label>
+        <textarea id="taskNotes" class="form-control" rows="2" placeholder="補足や注意点など"></textarea>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn btn-outline-secondary" id="btnReset">クリア</button>
+      </div>
     </form>
+  </section>
+
+  <!-- ===== 2. タスク一覧 ===== -->
+  <section id="section-list">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h4 class="mb-0">2 タスク一覧</h4>
+      <div class="btn-group view-switch" role="group" aria-label="view switch">
+        <button class="btn btn-outline-primary" data-view="table">2.1 テーブル表示</button>
+        <button class="btn btn-outline-primary" data-view="kanban">2.2 カンバン表示</button>
+        <button class="btn btn-outline-primary" data-view="timeline">2.3 タイムライン表示</button>
+        <button class="btn btn-outline-primary" data-view="calendar">2.4 カレンダー表示</button>
+      </div>
+    </div>
+
+    <!-- 2.1 テーブル表示 -->
+    <div id="view-table" class="mt-3">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>タスク名</th><th>担当</th><th>開始</th><th>期限</th><th>進捗</th><th>ステータス</th><th>タグ</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2.2 カンバン表示 -->
+    <div id="view-kanban" class="mt-3" style="display:none;">
+      <div class="d-flex kanban-wrap">
+        <div class="kanban-column" id="col-todo" data-status="ToDo" ondragover="allowDrop(event)" ondrop="onDrop(event)">
+          <h6 class="mb-3">ToDo</h6>
+          <div id="kanban-todo"></div>
+        </div>
+        <div class="kanban-column" id="col-doing" data-status="進行中" ondragover="allowDrop(event)" ondrop="onDrop(event)">
+          <h6 class="mb-3">進行中</h6>
+          <div id="kanban-doing"></div>
+        </div>
+        <div class="kanban-column" id="col-done" data-status="完了" ondragover="allowDrop(event)" ondrop="onDrop(event)">
+          <h6 class="mb-3">完了</h6>
+          <div id="kanban-done"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.3 タイムライン表示（Gantt） -->
+    <div id="view-timeline" class="mt-3" style="display:none;">
+      <div id="gantt"></div>
+    </div>
+
+    <!-- 2.4 カレンダー表示 -->
+    <div id="view-calendar" class="mt-3" style="display:none;">
+      <div id="calendar"></div>
+    </div>
+  </section>
+
+  <div class="mt-4">
+    <a href="/admin" class="btn btn-link">← ホームに戻る</a>
   </div>
 
-  <!-- 一覧 -->
-  <div id="section-list" style="display:none;">
-    <table class="table mt-4">
-      <thead><tr><th>タスク名</th><th>担当者</th><th>開始</th><th>期限</th><th>ステータス</th><th>進捗</th><th>操作</th></tr></thead>
-      <tbody id="taskTableBody"></tbody>
-    </table>
-  </div>
-
-  <a href="/admin" class="btn btn-link mt-3">← ホームに戻る</a>
 </div>
 
+<!-- Libs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
 <script>
-let tasks = [
-  { id: 1, name: "基礎工事", assignee: "佐藤", start: "2025-08-01", end: "2025-08-10", status: "ToDo", progress: 40, tags: ["重要"], notes: "開始前に地盤調査" },
-  { id: 2, name: "足場組立", assignee: "田中", start: "2025-08-05", end: "2025-08-15", status: "進行中", progress: 60, tags: ["外構"], notes: "資材確認済" }
-];
+  // ===== 仮データ =====
+  let tasks = [
+    { id: 1, name: "基礎工事", assignee: "佐藤", start: "2025-08-01", end: "2025-08-10", progress: 40, status: "ToDo", tags: ["工程A","重要"], notes: "地盤調査完了後に開始" },
+    { id: 2, name: "足場組立", assignee: "田中", start: "2025-08-05", end: "2025-08-15", progress: 60, status: "進行中", tags: ["安全","外構"], notes: "足場資材の在庫確認済み" },
+    { id: 3, name: "配管工事", assignee: "佐藤", start: "2025-08-10", end: "2025-08-20", progress: 0,  status: "完了", tags: ["水道","住宅"], notes: "施工図面を確認" }
+  ];
 
-document.getElementById("taskForm").addEventListener("submit", function(e) {
-  e.preventDefault();
-  const id = document.getElementById("editId").value;
-  const task = {
-    id: id ? parseInt(id) : Date.now(),
-    name: document.getElementById("taskName").value,
-    assignee: document.getElementById("taskAssignee").value,
-    start: document.getElementById("taskStart").value,
-    end: document.getElementById("taskEnd").value,
-    status: document.getElementById("taskStatus").value,
-    progress: parseInt(document.getElementById("taskProgress").value),
-    tags: document.getElementById("taskTags").value.split(',').map(t => t.trim()),
-    notes: document.getElementById("taskNotes").value
-  };
-
-  if (id) {
-    const index = tasks.findIndex(t => t.id === parseInt(id));
-    tasks[index] = task;
-  } else {
-    tasks.push(task);
+  // ===== 共通: UIレンダリング =====
+  function renderAll() {
+    renderTable();
+    renderKanban();
+    renderGantt();
+    renderCalendar();
   }
 
-  e.target.reset();
-  document.getElementById("editId").value = "";
-  renderTasks();
-  showSection("list");
-});
+  // --- 2.1 テーブル表示 ---
+  function renderTable() {
+    const tbody = document.getElementById("tableBody");
+    tbody.innerHTML = "";
+    tasks.forEach(t => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><a href="#" onclick="editTask(${t.id});return false;">${t.name}</a></td>
+        <td>${t.assignee}</td>
+        <td>${t.start}</td>
+        <td>${t.end}</td>
+        <td>${t.progress}%</td>
+        <td>${t.status}</td>
+        <td>${(t.tags||[]).map(tag => `<span class='badge rounded-pill badge-tag me-1'>${tag}</span>`).join("")}</td>
+        <td class="text-nowrap">
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="editTask(${t.id})">編集</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${t.id})">削除</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-function renderTasks() {
-  const tbody = document.getElementById("taskTableBody");
-  tbody.innerHTML = "";
-  tasks.forEach(task => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${task.name}</td><td>${task.assignee}</td><td>${task.start}</td><td>${task.end}</td>
-      <td>${task.status}</td><td>${task.progress}%</td>
-      <td><button class="btn btn-sm btn-outline-primary" onclick="editTask(${task.id})">編集</button></td>
-    `;
-    tbody.appendChild(row);
+  // --- 2.2 カンバン表示（ドラッグ＆ドロップ対応） ---
+  function renderKanban() {
+    const cols = {
+      "ToDo": document.getElementById("kanban-todo"),
+      "進行中": document.getElementById("kanban-doing"),
+      "完了": document.getElementById("kanban-done")
+    };
+    Object.values(cols).forEach(el => el.innerHTML = "");
+    tasks.forEach(t => {
+      const card = document.createElement("div");
+      card.className = "kanban-card";
+      card.setAttribute("draggable", "true");
+      card.id = "card-" + t.id;
+      card.addEventListener("dragstart", (e) => onDragStart(e, t.id));
+
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="fw-bold">${t.name}</div>
+            <div class="small text-muted">${t.assignee}｜${t.start} → ${t.end}</div>
+            <div class="mt-1">${(t.tags||[]).map(tag => `<span class='badge rounded-pill badge-tag me-1'>${tag}</span>`).join("")}</div>
+          </div>
+          <div class="ms-2">
+            <button class="btn-icon" title="編集" onclick="event.stopPropagation(); editTask(${t.id});">
+              ✏️
+            </button>
+            <button class="btn-icon" title="削除" onclick="event.stopPropagation(); deleteTask(${t.id});">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `;
+      card.onclick = () => editTask(t.id);
+      cols[t.status]?.appendChild(card);
+    });
+  }
+
+  // DnD handlers
+  function onDragStart(ev, id) {
+    ev.dataTransfer.setData("text/plain", String(id));
+  }
+  function allowDrop(ev) {
+    ev.preventDefault();
+  }
+  function onDrop(ev) {
+    ev.preventDefault();
+    const id = parseInt(ev.dataTransfer.getData("text/plain"), 10);
+    const col = ev.currentTarget; // kanban-column
+    const newStatus = col.getAttribute("data-status");
+    const idx = tasks.findIndex(t => t.id === id);
+    if (idx >= 0 && newStatus) {
+      tasks[idx].status = newStatus;
+      // 変更を反映
+      renderKanban();
+      renderGantt();
+      renderCalendar();
+    }
+  }
+
+  // --- 2.3 タイムライン（Gantt） ---
+  let ganttInstance = null;
+  function renderGantt() {
+    const data = tasks.map(t => ({
+      id: t.id,
+      name: t.name,
+      start: t.start,
+      end: t.end,
+      progress: t.progress,
+      custom_class: "bar"
+    }));
+    const target = document.getElementById("gantt");
+    target.innerHTML = "";
+    ganttInstance = new Gantt("#gantt", data, {
+      on_click: (task) => editTask(task.id)
+    });
+  }
+
+  // --- 2.4 カレンダー ---
+  let calendar;
+  function renderCalendar() {
+    const calEl = document.getElementById("calendar");
+    if (calendar) { calendar.destroy(); }
+    const events = tasks.map(t => ({
+      id: String(t.id),
+      title: t.name,
+      start: t.start,
+      end: addOneDay(t.end),
+      extendedProps: { assignee: t.assignee }
+    }));
+    calendar = new FullCalendar.Calendar(calEl, {
+      initialView: "dayGridMonth",
+      events,
+      eventClick: (info) => {
+        const id = parseInt(info.event.id, 10);
+        editTask(id);
+      }
+    });
+    calendar.render();
+  }
+  function addOneDay(iso) {
+    const d = new Date(iso);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0,10);
+  }
+
+  // ===== 作成/編集/削除 =====
+  document.getElementById("taskForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const idStr = document.getElementById("editId").value;
+    const task = {
+      id: idStr ? parseInt(idStr, 10) : Date.now(),
+      name: document.getElementById("taskName").value.trim(),
+      assignee: document.getElementById("taskAssignee").value.trim(),
+      status: document.getElementById("taskStatus").value,
+      start: document.getElementById("taskStart").value,
+      end: document.getElementById("taskEnd").value,
+      progress: Math.max(0, Math.min(100, parseInt(document.getElementById("taskProgress").value || "0", 10))),
+      tags: document.getElementById("taskTags").value.split(",").map(s => s.trim()).filter(Boolean),
+      notes: document.getElementById("taskNotes").value.trim()
+    };
+    if (idStr) {
+      const idx = tasks.findIndex(t => t.id === task.id);
+      if (idx >= 0) tasks[idx] = task;
+    } else {
+      tasks.push(task);
+    }
+    clearForm();
+    renderAll();
+    switchView(currentView);
   });
-}
 
-function editTask(id) {
-  const task = tasks.find(t => t.id === id);
-  document.getElementById("editId").value = task.id;
-  document.getElementById("taskName").value = task.name;
-  document.getElementById("taskAssignee").value = task.assignee;
-  document.getElementById("taskStart").value = task.start;
-  document.getElementById("taskEnd").value = task.end;
-  document.getElementById("taskStatus").value = task.status;
-  document.getElementById("taskProgress").value = task.progress;
-  document.getElementById("taskTags").value = task.tags.join(', ');
-  document.getElementById("taskNotes").value = task.notes;
-  showSection("form");
-}
+  function deleteTask(id) {
+    if (!confirm("このタスクを削除しますか？")) return;
+    tasks = tasks.filter(t => t.id !== id);
+    renderAll();
+    switchView(currentView);
+  }
 
-function showSection(section) {
-  document.getElementById("section-form").style.display = (section === 'form') ? 'block' : 'none';
-  document.getElementById("section-list").style.display = (section === 'list') ? 'block' : 'none';
-}
+  document.getElementById("btnReset").addEventListener("click", () => {
+    clearForm();
+  });
 
-renderTasks();
+  function editTask(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById("editId").value = t.id;
+    document.getElementById("taskName").value = t.name;
+    document.getElementById("taskAssignee").value = t.assignee;
+    document.getElementById("taskStatus").value = t.status;
+    document.getElementById("taskStart").value = t.start;
+    document.getElementById("taskEnd").value = t.end;
+    document.getElementById("taskProgress").value = t.progress;
+    document.getElementById("taskTags").value = (t.tags||[]).join(", ");
+    document.getElementById("taskNotes").value = t.notes || "";
+    window.scrollTo({ top: document.getElementById("section-create").offsetTop - 8, behavior:"smooth" });
+  }
+
+  function clearForm() {
+    document.getElementById("taskForm").reset();
+    document.getElementById("editId").value = "";
+    document.getElementById("taskProgress").value = 0;
+  }
+
+  // ===== 表示切替 =====
+  let currentView = "table";
+  function switchView(view) {
+    currentView = view;
+    document.getElementById("view-table").style.display    = (view === "table") ? "block" : "none";
+    document.getElementById("view-kanban").style.display   = (view === "kanban") ? "block" : "none";
+    document.getElementById("view-timeline").style.display = (view === "timeline") ? "block" : "none";
+    document.getElementById("view-calendar").style.display = (view === "calendar") ? "block" : "none";
+    if (view === "timeline") renderGantt();
+    if (view === "calendar") renderCalendar();
+  }
+
+  document.querySelectorAll(".view-switch .btn").forEach(btn => {
+    btn.addEventListener("click", () => switchView(btn.dataset.view));
+  });
+
+  // 初期化
+  renderAll();
+  switchView("table");
 </script>
 </body>
 </html>
