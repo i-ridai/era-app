@@ -1,548 +1,616 @@
-<!DOCTYPE html>
-<html lang="ja">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Era 管理者ダッシュボード</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Frappe Gantt -->
-  <link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css" />
-  <!-- FullCalendar -->
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
-  <style>
-    :root { --bs-primary:#00BFFF !important; }
-    body { background:#fff; }
-    .badge-tag { background:#e8f7ff; border:1px solid #bfe9ff; color:#086ea1; }
-    .view-switch .nav-link { min-width: 140px; }
-    .kanban-wrap { gap: 2%; }
-    .kanban-column {
-      width: 32%;
-      background: #f0faff;
-      padding: 12px;
-      border-radius: 12px;
-      min-height: 80px;
-      border: 1px dashed #bfe9ff;
-    }
-    .kanban-card {
-      background: #fff;
-      border-left: 6px solid #00BFFF;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      padding: 12px;
-      margin-bottom: 12px;
-      cursor: grab;
-    }
-    .progress-track {
-      position: relative;
-      height: 10px;
-      background: #eef7ff;
-      border-radius: 6px;
-      margin-top: 8px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .progress-fill {
-      height: 10px;
-      background: #00BFFF;
-      border-radius: 6px;
-      width: 0%;
-    }
-    .progress-label { font-size: 12px; color:#0d6efd; }
-    #gantt { overflow-x:auto; }
-    .fc .fc-button-primary { background:#00BFFF;border-color:#00BFFF; }
-    .fc .fc-daygrid-day-number { text-decoration: none; }
-    .table thead th { white-space: nowrap; }
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
   </style>
 </head>
 <body>
-<div class="container py-4">
-
-  <h1 class="mb-4">Era 管理者ダッシュボード</h1>
-
-  <!-- 1. ダッシュボード（メトリクス） -->
-  <section id="section-dashboard" class="mb-4">
-    <div class="row g-3">
-      <div class="col-md-3">
-        <div class="card shadow-sm"><div class="card-body">
-          <div class="text-muted small">タスク総数</div>
-          <div id="metric-total" class="fs-3 fw-bold">0</div>
-        </div></div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm"><div class="card-body">
-          <div class="text-muted small">進行中</div>
-          <div id="metric-doing" class="fs-3 fw-bold">0</div>
-        </div></div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm"><div class="card-body">
-          <div class="text-muted small">完了</div>
-          <div id="metric-done" class="fs-3 fw-bold">0</div>
-        </div></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 1-1. タスク作成 -->
-  <section id="section-create" class="mb-5">
-    <h4 class="mb-3">1-1. タスク作成</h4>
-    <form id="taskForm" class="row g-3">
-      <input type="hidden" id="editId" />
-      <div class="col-md-4">
-        <label class="form-label">タスク名</label>
-        <input type="text" id="taskName" class="form-control" required />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">担当者</label>
-        <input type="text" id="taskAssignee" class="form-control" required />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">工事内容</label>
-        <input type="text" id="taskWorkType" class="form-control" placeholder="例：配管, 電気, 基礎" />
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">ステータス</label>
-        <select id="taskStatus" class="form-select">
-          <option value="ToDo">ToDo</option>
-          <option value="進行中">進行中</option>
-          <option value="完了">完了</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">開始日</label>
-        <input type="date" id="taskStart" class="form-control" required />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">期限</label>
-        <input type="date" id="taskEnd" class="form-control" required />
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">進捗 (%)</label>
-        <input type="number" id="taskProgress" min="0" max="100" value="0" class="form-control" />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">タグ（カンマ区切り）</label>
-        <input type="text" id="taskTags" class="form-control" placeholder="高優先, 設備" />
-      </div>
-      <div class="col-12">
-        <label class="form-label">備考</label>
-        <textarea id="taskNotes" class="form-control" rows="2" placeholder="補足や注意点など"></textarea>
-      </div>
-      <div class="col-12">
-        <button type="submit" class="btn btn-primary">保存</button>
-        <button type="button" class="btn btn-outline-secondary" id="btnReset">クリア</button>
-      </div>
-    </form>
-  </section>
-
-  <!-- 1-2. タスク一覧（タブ） -->
-  <section id="section-list">
-    <div class="d-flex align-items-end justify-content-between mb-3">
-      <h4 class="mb-0">1-2. タスク一覧</h4>
-      <!-- フィルター -->
-      <div class="row g-2">
-        <div class="col">
-          <select id="filterAssignee" class="form-select">
-            <option value="">担当者：全て</option>
-          </select>
-        </div>
-        <div class="col">
-          <select id="filterWorkType" class="form-select">
-            <option value="">工事内容：全て</option>
-          </select>
-        </div>
-        <div class="col">
-          <input type="date" id="filterFrom" class="form-control" placeholder="開始(From)">
-        </div>
-        <div class="col">
-          <input type="date" id="filterTo" class="form-control" placeholder="終了(To)">
-        </div>
-        <div class="col-auto">
-          <button class="btn btn-outline-primary" id="btnApplyFilter">適用</button>
-        </div>
-        <div class="col-auto">
-          <button class="btn btn-outline-secondary" id="btnResetFilter">リセット</button>
-        </div>
-      </div>
-    </div>
-
-    <ul class="nav nav-tabs view-switch" id="viewTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-kanban" type="button" role="tab">1-2-1. カンバン表示</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-timeline" type="button" role="tab">1-2-2. タイムライン表示</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-calendar" type="button" role="tab">1-2-3. カレンダー表示</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-table" type="button" role="tab">1-2-4. テーブル表示</button>
-      </li>
-    </ul>
-
-    <div class="tab-content mt-3">
-      <!-- Kanban -->
-      <div class="tab-pane fade show active" id="tab-kanban" role="tabpanel">
-        <div class="d-flex kanban-wrap">
-          <div class="kanban-column" data-status="ToDo" ondragover="allowDrop(event)" ondrop="onDrop(event)">
-            <h6 class="mb-3">ToDo</h6>
-            <div id="kanban-todo"></div>
-          </div>
-          <div class="kanban-column" data-status="進行中" ondragover="allowDrop(event)" ondrop="onDrop(event)">
-            <h6 class="mb-3">進行中</h6>
-            <div id="kanban-doing"></div>
-          </div>
-          <div class="kanban-column" data-status="完了" ondragover="allowDrop(event)" ondrop="onDrop(event)">
-            <h6 class="mb-3">完了</h6>
-            <div id="kanban-done"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Timeline -->
-      <div class="tab-pane fade" id="tab-timeline" role="tabpanel">
-        <div id="gantt"></div>
-      </div>
-
-      <!-- Calendar -->
-      <div class="tab-pane fade" id="tab-calendar" role="tabpanel">
-        <div id="calendar"></div>
-      </div>
-
-      <!-- Table -->
-      <div class="tab-pane fade" id="tab-table" role="tabpanel">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>タスク名</th><th>担当</th><th>工事内容</th><th>開始</th><th>期限</th><th>進捗</th><th>ステータス</th><th>タグ</th><th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <div class="mt-4">
-    <a href="/admin" class="btn btn-link">← ホームに戻る</a>
-  </div>
-
-</div>
-
-<!-- Libs -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-
-<script>
-  // ===== ローカルストレージ =====
-  const LS_KEY = "era_tasks_v1";
-  function saveToLS() { localStorage.setItem(LS_KEY, JSON.stringify(tasks)); }
-  function loadFromLS() {
-    try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; }
-    catch(e){ return null; }
-  }
-
-  // ===== 初期データ =====
-  let tasks = loadFromLS() || [
-    { id: 1, name: "基礎工事", assignee: "佐藤", workType:"基礎", start: "2025-08-01", end: "2025-08-10", progress: 40, status: "ToDo", tags: ["工程A","重要"], notes: "地盤調査完了後に開始" },
-    { id: 2, name: "足場組立", assignee: "田中", workType:"外構", start: "2025-08-05", end: "2025-08-15", progress: 60, status: "進行中", tags: ["安全","外構"], notes: "足場資材の在庫確認済み" },
-    { id: 3, name: "配管工事", assignee: "佐藤", workType:"配管", start: "2025-08-10", end: "2025-08-20", progress: 20, status: "完了", tags: ["水道","住宅"], notes: "施工図面を確認" }
-  ];
-
-  // ===== フィルタ状態 =====
-  const filter = { assignee:"", workType:"", from:"", to:"" };
-
-  // ===== ユーティリティ =====
-  function toISO(d) { return new Date(d).toISOString().slice(0,10); }
-  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
-  function uniqueValues(key) { return Array.from(new Set(tasks.map(t => (t[key]||"").trim()).filter(Boolean))); }
-
-  function updateMetrics(list) {
-    document.getElementById("metric-total").textContent = list.length;
-    document.getElementById("metric-doing").textContent = list.filter(t=>t.status==="進行中").length;
-    document.getElementById("metric-done").textContent  = list.filter(t=>t.status==="完了").length;
-  }
-
-  function applyFilter(list) {
-    const f = filter;
-    return list.filter(t => {
-      if (f.assignee && t.assignee !== f.assignee) return false;
-      if (f.workType && t.workType !== f.workType) return false;
-      if (f.from && new Date(t.start) < new Date(f.from)) return false;
-      if (f.to && new Date(t.end) > new Date(f.to)) return false;
-      return true;
-    });
-  }
-
-  // ===== フィルターUI =====
-  function renderFilterOptions() {
-    const sa = document.getElementById("filterAssignee");
-    const sw = document.getElementById("filterWorkType");
-    const assignees = uniqueValues("assignee");
-    const works = uniqueValues("workType");
-    const saVal = filter.assignee, swVal = filter.workType;
-    sa.innerHTML = '<option value="">担当者：全て</option>' + assignees.map(v=>`<option ${v===saVal?'selected':''} value="${v}">${v}</option>`).join("");
-    sw.innerHTML = '<option value="">工事内容：全て</option>' + works.map(v=>`<option ${v===swVal?'selected':''} value="${v}">${v}</option>`).join("");
-  }
-  document.getElementById("btnApplyFilter").addEventListener("click", ()=>{
-    filter.assignee = document.getElementById("filterAssignee").value;
-    filter.workType = document.getElementById("filterWorkType").value;
-    filter.from = document.getElementById("filterFrom").value;
-    filter.to   = document.getElementById("filterTo").value;
-    renderAll();
-  });
-  document.getElementById("btnResetFilter").addEventListener("click", ()=>{
-    filter.assignee=""; filter.workType=""; filter.from=""; filter.to="";
-    document.getElementById("filterAssignee").value="";
-    document.getElementById("filterWorkType").value="";
-    document.getElementById("filterFrom").value="";
-    document.getElementById("filterTo").value="";
-    renderAll();
-  });
-
-  // ===== レンダリング総括 =====
-  function renderAll() {
-    const filtered = applyFilter(tasks);
-    updateMetrics(filtered);
-    renderFilterOptions();
-    renderKanban(filtered);
-    renderGantt(filtered);
-    renderCalendar(filtered);
-    renderTable(filtered);
-    saveToLS();
-  }
-
-  // ===== Kanban（列DnD＋進捗ドラッグ） =====
-  function renderKanban(list) {
-    const cols = {
-      "ToDo": document.getElementById("kanban-todo"),
-      "進行中": document.getElementById("kanban-doing"),
-      "完了": document.getElementById("kanban-done")
-    };
-    Object.values(cols).forEach(el => el.innerHTML = "");
-    list.forEach(t => {
-      const card = document.createElement("div");
-      card.className = "kanban-card";
-      card.setAttribute("draggable","true");
-      card.addEventListener("dragstart", (e)=>onDragStart(e, t.id));
-
-      const tagHtml = (t.tags||[]).map(tag=>`<span class="badge rounded-pill badge-tag me-1">${tag}</span>`).join("");
-
-      card.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start">
-          <div style="min-width:0;">
-            <div class="fw-bold text-truncate" title="${t.name}">${t.name}</div>
-            <div class="small text-muted">${t.assignee}｜${t.workType||"-"}｜${t.start} → ${t.end}</div>
-            <div class="mt-1">${tagHtml}</div>
-            <div class="progress-label mt-1">${t.progress}%</div>
-            <div class="progress-track" data-id="${t.id}">
-              <div class="progress-fill" style="width:${t.progress}%"></div>
-            </div>
-          </div>
-          <div class="ms-2 flex-shrink-0">
-            <button class="btn btn-sm btn-outline-primary mb-1" onclick="event.stopPropagation(); editTask(${t.id});">編集</button>
-            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteTask(${t.id});">削除</button>
-          </div>
-        </div>
-      `;
-      // 進捗ドラッグ
-      const track = card.querySelector(".progress-track");
-      let dragging = false;
-      const updateFromEvent = (ev)=>{
-        const rect = track.getBoundingClientRect();
-        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left)/rect.width));
-        const pct = Math.round(ratio*100);
-        const idx = tasks.findIndex(x=>x.id===t.id);
-        if (idx>=0){ tasks[idx].progress = pct; }
-        track.querySelector(".progress-fill").style.width = pct+"%";
-        track.previousElementSibling.textContent = pct+"%";
-      };
-      track.addEventListener("mousedown",(e)=>{ dragging=true; updateFromEvent(e); });
-      window.addEventListener("mousemove",(e)=>{ if(dragging){ updateFromEvent(e); }});
-      window.addEventListener("mouseup",()=>{ if(dragging){ dragging=false; saveToLS(); renderGantt(applyFilter(tasks)); }});
-
-      cols[t.status]?.appendChild(card);
-    });
-  }
-  function onDragStart(ev, id){ ev.dataTransfer.setData("text/plain", String(id)); }
-  function allowDrop(ev){ ev.preventDefault(); }
-  function onDrop(ev){
-    ev.preventDefault();
-    const id = parseInt(ev.dataTransfer.getData("text/plain"),10);
-    const status = ev.currentTarget.getAttribute("data-status");
-    const idx = tasks.findIndex(t=>t.id===id);
-    if (idx>=0){ tasks[idx].status = status; saveToLS(); renderAll(); }
-  }
-
-  // ===== Timeline（Frappe Gantt：日付＆進捗ドラッグ） =====
-  let ganttInstance = null;
-  function renderGantt(list) {
-    const data = list.map(t=>({
-      id: t.id,
-      name: t.name,
-      start: t.start,
-      end: t.end,
-      progress: t.progress,
-      custom_class: "bar"
-    }));
-    const target = document.getElementById("gantt");
-    target.innerHTML = "";
-    ganttInstance = new Gantt("#gantt", data, {
-      on_click: (task) => editTask(task.id),
-      on_date_change: (task, start, end) => {
-        const idx = tasks.findIndex(x=>x.id===task.id);
-        if (idx>=0){
-          tasks[idx].start = toISO(start);
-          tasks[idx].end = toISO(end);
-          saveToLS();
-          renderAll();
-        }
-      },
-      on_progress_change: (task, progress) => {
-        const idx = tasks.findIndex(x=>x.id===task.id);
-        if (idx>=0){
-          tasks[idx].progress = Math.round(progress);
-          saveToLS();
-          renderKanban(applyFilter(tasks));
-        }
-      }
-    });
-  }
-
-  // ===== Calendar（ドラッグ＆リサイズ） =====
-  let calendar;
-  function renderCalendar(list) {
-    const calEl = document.getElementById("calendar");
-    if (calendar) { calendar.destroy(); }
-    const events = list.map(t=>({
-      id: String(t.id),
-      title: t.name,
-      start: t.start,
-      end: addOneDay(t.end), // 非包含
-      editable: true
-    }));
-    calendar = new FullCalendar.Calendar(calEl, {
-      initialView: "dayGridMonth",
-      events,
-      editable: true,
-      eventDrop: (info) => {
-        const id = parseInt(info.event.id,10);
-        const idx = tasks.findIndex(t=>t.id===id);
-        if (idx>=0){
-          const start = toISO(info.event.start);
-          const endISO = toISO(info.event.end ?? info.event.start);
-          const realEnd = toISO(new Date(new Date(endISO).getTime() - 24*60*60*1000));
-          tasks[idx].start = start;
-          tasks[idx].end = realEnd;
-          saveToLS(); renderAll();
-        }
-      },
-      eventResize: (info) => {
-        const id = parseInt(info.event.id,10);
-        const idx = tasks.findIndex(t=>t.id===id);
-        if (idx>=0){
-          const endISO = toISO(info.event.end);
-          const realEnd = toISO(new Date(new Date(endISO).getTime() - 24*60*60*1000));
-          tasks[idx].end = realEnd;
-          saveToLS(); renderAll();
-        }
-      },
-      eventClick: (info) => { editTask(parseInt(info.event.id,10)); }
-    });
-    calendar.render();
-  }
-  function addOneDay(iso){
-    const d = new Date(iso); d.setDate(d.getDate()+1); return toISO(d);
-  }
-
-  // ===== Table =====
-  function renderTable(list) {
-    const tbody = document.getElementById("tableBody");
-    tbody.innerHTML = "";
-    list.forEach(t=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><a href="#" onclick="editTask(${t.id});return false;">${t.name}</a></td>
-        <td>${t.assignee}</td>
-        <td>${t.workType||"-"}</td>
-        <td>${t.start}</td>
-        <td>${t.end}</td>
-        <td>${t.progress}%</td>
-        <td>${t.status}</td>
-        <td>${(t.tags||[]).map(tag=>`<span class="badge rounded-pill badge-tag me-1">${tag}</span>`).join("")}</td>
-        <td class="text-nowrap">
-          <button class="btn btn-sm btn-outline-primary me-1" onclick="editTask(${t.id})">編集</button>
-          <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${t.id})">削除</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  // ===== 作成/編集/削除 =====
-  document.getElementById("taskForm").addEventListener("submit",(e)=>{
-    e.preventDefault();
-    const idStr = document.getElementById("editId").value;
-    const task = {
-      id: idStr ? parseInt(idStr,10) : Date.now(),
-      name: document.getElementById("taskName").value.trim(),
-      assignee: document.getElementById("taskAssignee").value.trim(),
-      workType: document.getElementById("taskWorkType").value.trim(),
-      status: document.getElementById("taskStatus").value,
-      start: document.getElementById("taskStart").value,
-      end: document.getElementById("taskEnd").value,
-      progress: clamp(parseInt(document.getElementById("taskProgress").value||"0",10),0,100),
-      tags: document.getElementById("taskTags").value.split(",").map(s=>s.trim()).filter(Boolean),
-      notes: document.getElementById("taskNotes").value.trim()
-    };
-    if (idStr) {
-      const idx = tasks.findIndex(t=>t.id===task.id);
-      if (idx>=0) tasks[idx]=task;
-    } else {
-      tasks.push(task);
-    }
-    saveToLS();
-    clearForm();
-    renderAll();
-  });
-
-  function editTask(id){
-    const t = tasks.find(x=>x.id===id);
-    if (!t) return;
-    document.getElementById("editId").value = t.id;
-    document.getElementById("taskName").value = t.name;
-    document.getElementById("taskAssignee").value = t.assignee;
-    document.getElementById("taskWorkType").value = t.workType||"";
-    document.getElementById("taskStatus").value = t.status;
-    document.getElementById("taskStart").value = t.start;
-    document.getElementById("taskEnd").value = t.end;
-    document.getElementById("taskProgress").value = t.progress;
-    document.getElementById("taskTags").value = (t.tags||[]).join(", ");
-    document.getElementById("taskNotes").value = t.notes||"";
-    window.scrollTo({ top: document.getElementById("section-create").offsetTop - 8, behavior:"smooth" });
-  }
-
-  function deleteTask(id){
-    if (!confirm("このタスクを削除しますか？")) return;
-    tasks = tasks.filter(t=>t.id!==id);
-    saveToLS();
-    renderAll();
-  }
-
-  document.getElementById("btnReset").addEventListener("click", clearForm);
-  function clearForm(){
-    document.getElementById("taskForm").reset();
-    document.getElementById("editId").value = "";
-    document.getElementById("taskProgress").value = 0;
-  }
-
-  // ===== 初期化 =====
-  renderAll();
-</script>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="ja"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Era 管理者ダッシュボード&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- Bootstrap --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- Frappe Gantt --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- FullCalendar CSS（修正） --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/main.min.css" rel="stylesheet" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>:root { --bs-primary:#00BFFF !important; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body { background:#fff; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.badge-tag { background:#e8f7ff; border:1px solid #bfe9ff; color:#086ea1; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.view-switch .nav-link { min-width: 140px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kanban-wrap { gap: 2%; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kanban-column {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: 32%;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #f0faff;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>min-height: 80px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px dashed #bfe9ff;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kanban-card {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #fff;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-left: 6px solid #00BFFF;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-shadow: 0 2px 8px rgba(0,0,0,.06);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-bottom: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.progress-track {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>position: relative;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>height: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #eef7ff;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 6px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>user-select: none;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.progress-fill {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>height: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #00BFFF;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: 6px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: 0%;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.progress-label { font-size: 12px; color:#0d6efd; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>#gantt { overflow-x:auto; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.fc .fc-button-primary { background:#00BFFF;border-color:#00BFFF; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.table thead th { white-space: nowrap; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1">&lt;div class="container py-4"&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1 class="mb-4"&gt;Era 管理者ダッシュボード&lt;/h1&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- 1. ダッシュボード --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;section id="section-dashboard" class="mb-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row g-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="card shadow-sm"&gt;&lt;div class="card-body"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="text-muted small"&gt;タスク総数&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div id="metric-total" class="fs-3 fw-bold"&gt;0&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="card shadow-sm"&gt;&lt;div class="card-body"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="text-muted small"&gt;進行中&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div id="metric-doing" class="fs-3 fw-bold"&gt;0&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="card shadow-sm"&gt;&lt;div class="card-body"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="text-muted small"&gt;完了&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div id="metric-done" class="fs-3 fw-bold"&gt;0&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/section&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- 1-1. タスク作成 --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;section id="section-create" class="mb-5"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;h4 class="mb-3"&gt;1-1. タスク作成&lt;/h4&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;form id="taskForm" class="row g-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;input type="hidden" id="editId" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;タスク名&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="text" id="taskName" class="form-control" required /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;担当者&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="text" id="taskAssignee" class="form-control" required /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;工事内容&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="text" id="taskWorkType" class="form-control" placeholder="例：配管, 電気, 基礎" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;ステータス&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="taskStatus" class="form-select"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="ToDo"&gt;ToDo&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="進行中"&gt;進行中&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="完了"&gt;完了&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;開始日&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="date" id="taskStart" class="form-control" required /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;期限&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="date" id="taskEnd" class="form-control" required /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;進捗 (%)&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="number" id="taskProgress" min="0" max="100" value="0" class="form-control" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-md-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;タグ（カンマ区切り）&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="text" id="taskTags" class="form-control" placeholder="高優先, 設備" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-12"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="form-label"&gt;備考&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;textarea id="taskNotes" class="form-control" rows="2" placeholder="補足や注意点など"&gt;&lt;/textarea&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="col-12"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button type="submit" class="btn btn-primary"&gt;保存&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button type="button" class="btn btn-outline-secondary" id="btnReset"&gt;クリア&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/form&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/section&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- 1-2. タスク一覧（タブ） --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;section id="section-list"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="d-flex align-items-end justify-content-between mb-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;h4 class="mb-0"&gt;1-2. タスク一覧&lt;/h4&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;!-- フィルター --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="row g-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;select id="filterAssignee" class="form-select"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;option value=""&gt;担当者：全て&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;select id="filterWorkType" class="form-select"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;option value=""&gt;工事内容：全て&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;input type="date" id="filterFrom" class="form-control" placeholder="開始(From)"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;input type="date" id="filterTo" class="form-control" placeholder="終了(To)"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-auto"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn btn-outline-primary" id="btnApplyFilter"&gt;適用&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-auto"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn btn-outline-secondary" id="btnResetFilter"&gt;リセット&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;ul class="nav nav-tabs view-switch" id="viewTabs" role="tablist"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;li class="nav-item" role="presentation"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-kanban" type="button" role="tab"&gt;1-2-1. カンバン表示&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/li&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;li class="nav-item" role="presentation"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-timeline" type="button" role="tab"&gt;1-2-2. タイムライン表示&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/li&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;li class="nav-item" role="presentation"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-calendar" type="button" role="tab"&gt;1-2-3. カレンダー表示&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/li&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;li class="nav-item" role="presentation"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-table" type="button" role="tab"&gt;1-2-4. テーブル表示&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/li&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/ul&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="tab-content mt-3"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;!-- Kanban --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="tab-pane fade show active" id="tab-kanban" role="tabpanel"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="d-flex kanban-wrap"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="kanban-column" data-status="ToDo" ondragover="allowDrop(event)" ondrop="onDrop(event)"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h6 class="mb-3"&gt;ToDo&lt;/h6&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="kanban-todo"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="kanban-column" data-status="進行中" ondragover="allowDrop(event)" ondrop="onDrop(event)"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h6 class="mb-3"&gt;進行中&lt;/h6&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="kanban-doing"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="kanban-column" data-status="完了" ondragover="allowDrop(event)" ondrop="onDrop(event)"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h6 class="mb-3"&gt;完了&lt;/h6&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="kanban-done"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;!-- Timeline --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="tab-pane fade" id="tab-timeline" role="tabpanel"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="gantt"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;!-- Calendar --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="tab-pane fade" id="tab-calendar" role="tabpanel"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="calendar"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;!-- Table --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="tab-pane fade" id="tab-table" role="tabpanel"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="table-responsive"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;table class="table table-hover align-middle"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;thead class="table-light"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>&lt;tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;th&gt;タスク名&lt;/th&gt;&lt;th&gt;担当&lt;/th&gt;&lt;th&gt;工事内容&lt;/th&gt;&lt;th&gt;開始&lt;/th&gt;&lt;th&gt;期限&lt;/th&gt;&lt;th&gt;進捗&lt;/th&gt;&lt;th&gt;ステータス&lt;/th&gt;&lt;th&gt;タグ&lt;/th&gt;&lt;th&gt;操作&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>&lt;/tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/thead&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;tbody id="tableBody"&gt;&lt;/tbody&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/table&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/section&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="mt-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;a href="/admin" class="btn btn-link"&gt;← ホームに戻る&lt;/a&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;!-- Task 詳細モーダル --&gt;</p>
+<p class="p1">&lt;div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="modal-dialog modal-lg modal-dialog-scrollable"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="modal-content"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modal-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h5 class="modal-title" id="taskModalTitle"&gt;タスク詳細&lt;/h5&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"&gt;&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modal-body"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="taskModalBody"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modal-footer"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn btn-outline-danger" id="btnModalDelete"&gt;削除&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn btn-primary" id="btnModalEdit"&gt;編集&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;!-- Libs --&gt;</p>
+<p class="p1">&lt;script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1">&lt;script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1">&lt;!-- FullCalendar JS（グローバルビルド） --&gt;</p>
+<p class="p1">&lt;script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"&gt;&lt;/script&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== ローカルストレージ =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const LS_KEY = "era_tasks_v1";</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function saveToLS() { localStorage.setItem(LS_KEY, JSON.stringify(tasks)); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function loadFromLS() { try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== 初期データ =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let tasks = loadFromLS() || [</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ id: 1, name: "基礎工事", assignee: "佐藤", workType:"基礎", start: "2025-08-01", end: "2025-08-10", progress: 40, status: "ToDo", tags: ["工程A","重要"], notes: "地盤調査完了後に開始" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ id: 2, name: "足場組立", assignee: "田中", workType:"外構", start: "2025-08-05", end: "2025-08-15", progress: 60, status: "進行中", tags: ["安全","外構"], notes: "足場資材の在庫確認済み" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ id: 3, name: "配管工事", assignee: "佐藤", workType:"配管", start: "2025-08-10", end: "2025-08-20", progress: 20, status: "完了", tags: ["水道","住宅"], notes: "施工図面を確認" }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== フィルタ状態 =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const filter = { assignee:"", workType:"", from:"", to:"" };</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== ユーティリティ =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function toISO(d) { return new Date(d).toISOString().slice(0,10); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function uniqueValues(key) { return Array.from(new Set(tasks.map(t =&gt; (t[key]||"").trim()).filter(Boolean))); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function getTask(id){ return tasks.find(t =&gt; t.id === id); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function updateMetrics(list) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("metric-total").textContent = list.length;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("metric-doing").textContent = list.filter(t=&gt;t.status==="進行中").length;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("metric-done").textContent<span class="Apple-converted-space">  </span>= list.filter(t=&gt;t.status==="完了").length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function applyFilter(list) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const f = filter;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return list.filter(t =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (f.assignee &amp;&amp; t.assignee !== f.assignee) return false;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (f.workType &amp;&amp; t.workType !== f.workType) return false;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (f.from &amp;&amp; new Date(t.start) &lt; new Date(f.from)) return false;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (f.to &amp;&amp; new Date(t.end) &gt; new Date(f.to)) return false;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return true;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== フィルターUI =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderFilterOptions() {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const sa = document.getElementById("filterAssignee");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const sw = document.getElementById("filterWorkType");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const assignees = uniqueValues("assignee");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const works = uniqueValues("workType");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const saVal = filter.assignee, swVal = filter.workType;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>sa.innerHTML = '&lt;option value=""&gt;担当者：全て&lt;/option&gt;' + assignees.map(v=&gt;`&lt;option ${v===saVal?'selected':''} value="${v}"&gt;${v}&lt;/option&gt;`).join("");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>sw.innerHTML = '&lt;option value=""&gt;工事内容：全て&lt;/option&gt;' + works.map(v=&gt;`&lt;option ${v===swVal?'selected':''} value="${v}"&gt;${v}&lt;/option&gt;`).join("");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("btnApplyFilter").addEventListener("click", ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filter.assignee = document.getElementById("filterAssignee").value;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filter.workType = document.getElementById("filterWorkType").value;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filter.from = document.getElementById("filterFrom").value;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filter.to <span class="Apple-converted-space">  </span>= document.getElementById("filterTo").value;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderAll();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("btnResetFilter").addEventListener("click", ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filter.assignee=""; filter.workType=""; filter.from=""; filter.to="";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("filterAssignee").value="";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("filterWorkType").value="";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("filterFrom").value="";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("filterTo").value="";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderAll();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== レンダリング総括 =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderAll() {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const filtered = applyFilter(tasks);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>updateMetrics(filtered);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderFilterOptions();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderKanban(filtered);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderGantt(filtered);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderCalendar(filtered);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderTable(filtered);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>saveToLS();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== Kanban（列DnD＋進捗ドラッグ＋クリックで詳細） =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderKanban(list) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const cols = {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>"ToDo": document.getElementById("kanban-todo"),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>"進行中": document.getElementById("kanban-doing"),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>"完了": document.getElementById("kanban-done")</p>
+<p class="p1"><span class="Apple-converted-space">    </span>};</p>
+<p class="p1"><span class="Apple-converted-space">    </span>Object.values(cols).forEach(el =&gt; el.innerHTML = "");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>list.forEach(t =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const card = document.createElement("div");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>card.className = "kanban-card";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>card.setAttribute("draggable","true");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>card.addEventListener("dragstart", (e)=&gt;onDragStart(e, t.id));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const tagHtml = (t.tags||[]).map(tag=&gt;`&lt;span class="badge rounded-pill badge-tag me-1"&gt;${tag}&lt;/span&gt;`).join("");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>card.innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="d-flex justify-content-between align-items-start"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div style="min-width:0;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="fw-bold text-truncate" title="${t.name}"&gt;${t.name}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="small text-muted"&gt;${t.assignee}｜${t.workType||"-"}｜${t.start} → ${t.end}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="mt-1"&gt;${tagHtml}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="progress-label mt-1"&gt;${t.progress}%&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="progress-track" data-id="${t.id}"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>&lt;div class="progress-fill" style="width:${t.progress}%"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="ms-2 flex-shrink-0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn btn-sm btn-outline-primary mb-1" onclick="event.stopPropagation(); editTask(${t.id});"&gt;編集&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteTask(${t.id});"&gt;削除&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// 進捗ドラッグ</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const track = card.querySelector(".progress-track");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let dragging = false;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const updateFromEvent = (ev)=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const rect = track.getBoundingClientRect();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left)/rect.width));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const pct = Math.round(ratio*100);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const idx = tasks.findIndex(x=&gt;x.id===t.id);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (idx&gt;=0){ tasks[idx].progress = pct; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>track.querySelector(".progress-fill").style.width = pct+"%";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>track.previousElementSibling.textContent = pct+"%";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>};</p>
+<p class="p1"><span class="Apple-converted-space">      </span>track.addEventListener("mousedown",(e)=&gt;{ e.stopPropagation(); dragging=true; updateFromEvent(e); });</p>
+<p class="p1"><span class="Apple-converted-space">      </span>window.addEventListener("mousemove",(e)=&gt;{ if(dragging){ updateFromEvent(e); }});</p>
+<p class="p1"><span class="Apple-converted-space">      </span>window.addEventListener("mouseup",()=&gt;{ if(dragging){ dragging=false; saveToLS(); renderGantt(applyFilter(tasks)); }});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// クリックで詳細ポップアップ</p>
+<p class="p1"><span class="Apple-converted-space">      </span>card.addEventListener("click", ()=&gt; openDetail(t.id));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>cols[t.status]?.appendChild(card);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function onDragStart(ev, id){ ev.dataTransfer.setData("text/plain", String(id)); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function allowDrop(ev){ ev.preventDefault(); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function onDrop(ev){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>ev.preventDefault();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const id = parseInt(ev.dataTransfer.getData("text/plain"),10);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const status = ev.currentTarget.getAttribute("data-status");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const idx = tasks.findIndex(t=&gt;t.id===id);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (idx&gt;=0){ tasks[idx].status = status; saveToLS(); renderAll(); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== Timeline（Frappe Gantt） =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let ganttInstance = null;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderGantt(list) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const data = list.map(t=&gt;({ id: t.id, name: t.name, start: t.start, end: t.end, progress: t.progress }));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const target = document.getElementById("gantt");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>target.innerHTML = "";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>ganttInstance = new Gantt("#gantt", data, {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>on_click: (task) =&gt; openDetail(task.id),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>on_date_change: (task, start, end) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const idx = tasks.findIndex(x=&gt;x.id===task.id);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (idx&gt;=0){</p>
+<p class="p1"><span class="Apple-converted-space">          </span>tasks[idx].start = toISO(start);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>tasks[idx].end = toISO(end);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>saveToLS(); renderAll();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>on_progress_change: (task, progress) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const idx = tasks.findIndex(x=&gt;x.id===task.id);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (idx&gt;=0){</p>
+<p class="p1"><span class="Apple-converted-space">          </span>tasks[idx].progress = Math.round(progress);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>saveToLS(); renderKanban(applyFilter(tasks));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== Calendar（FullCalendar） =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let calendar;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderCalendar(list) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const el = document.getElementById("calendar");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (calendar) { calendar.destroy(); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const events = list.map(t=&gt;({</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: String(t.id),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>title: t.name,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>start: t.start,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>end: addOneDay(t.end), // 非包含</p>
+<p class="p1"><span class="Apple-converted-space">      </span>editable: true</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>calendar = new FullCalendar.Calendar(el, {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>initialView: "dayGridMonth",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>events,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>editable: true,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>eventDrop: (info) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const id = parseInt(info.event.id,10);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const idx = tasks.findIndex(t=&gt;t.id===id);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (idx&gt;=0){</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const start = toISO(info.event.start);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const endISO = toISO(info.event.end ?? info.event.start);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const realEnd = toISO(new Date(new Date(endISO).getTime() - 24*60*60*1000));</p>
+<p class="p1"><span class="Apple-converted-space">          </span>tasks[idx].start = start;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>tasks[idx].end = realEnd;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>saveToLS(); renderAll();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>eventResize: (info) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const id = parseInt(info.event.id,10);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const idx = tasks.findIndex(t=&gt;t.id===id);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (idx&gt;=0){</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const endISO = toISO(info.event.end);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const realEnd = toISO(new Date(new Date(endISO).getTime() - 24*60*60*1000));</p>
+<p class="p1"><span class="Apple-converted-space">          </span>tasks[idx].end = realEnd;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>saveToLS(); renderAll();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>eventClick: (info) =&gt; openDetail(parseInt(info.event.id,10))</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>calendar.render();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function addOneDay(iso){ const d = new Date(iso); d.setDate(d.getDate()+1); return toISO(d); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== Table =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function renderTable(list) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const tbody = document.getElementById("tableBody");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tbody.innerHTML = "";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>list.forEach(t=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const tr = document.createElement("tr");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>tr.innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;&lt;a href="#" onclick="openDetail(${t.id});return false;"&gt;${t.name}&lt;/a&gt;&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;${t.assignee}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;${t.workType||"-"}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;${t.start}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;${t.end}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;${t.progress}%&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;${t.status}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td&gt;${(t.tags||[]).map(tag=&gt;`&lt;span class="badge rounded-pill badge-tag me-1"&gt;${tag}&lt;/span&gt;`).join("")}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;td class="text-nowrap"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn btn-sm btn-outline-primary me-1" onclick="editTask(${t.id})"&gt;編集&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${t.id})"&gt;削除&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>tbody.appendChild(tr);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== 詳細モーダル =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const taskModal = new bootstrap.Modal(document.getElementById('taskModal'));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let modalTaskId = null;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function openDetail(id){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const t = getTask(id);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!t) return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>modalTaskId = id;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskModalTitle").textContent = t.name;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const body = `</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="row g-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-md-6"&gt;&lt;span class="text-muted"&gt;担当者：&lt;/span&gt;${t.assignee}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-md-6"&gt;&lt;span class="text-muted"&gt;工事内容：&lt;/span&gt;${t.workType||"-"}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-md-6"&gt;&lt;span class="text-muted"&gt;開始日：&lt;/span&gt;${t.start}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-md-6"&gt;&lt;span class="text-muted"&gt;期限：&lt;/span&gt;${t.end}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-md-6"&gt;&lt;span class="text-muted"&gt;ステータス：&lt;/span&gt;${t.status}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-md-6"&gt;&lt;span class="text-muted"&gt;進捗：&lt;/span&gt;${t.progress}%&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-12"&gt;&lt;span class="text-muted"&gt;タグ：&lt;/span&gt;${(t.tags||[]).map(x=&gt;`&lt;span class='badge rounded-pill badge-tag me-1'&gt;${x}&lt;/span&gt;`).join("")||"-"}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="col-12"&gt;&lt;span class="text-muted"&gt;備考：&lt;/span&gt;&lt;div class="border rounded p-2 bg-light"&gt;${(t.notes||"").replace(/\n/g,"&lt;br&gt;")}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskModalBody").innerHTML = body;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>taskModal.show();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("btnModalEdit").addEventListener("click", ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(modalTaskId==null) return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>editTask(modalTaskId);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>taskModal.hide();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("btnModalDelete").addEventListener("click", ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(modalTaskId==null) return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>deleteTask(modalTaskId);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>taskModal.hide();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== 作成/編集/削除 =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("taskForm").addEventListener("submit",(e)=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>e.preventDefault();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const idStr = document.getElementById("editId").value;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const task = {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: idStr ? parseInt(idStr,10) : Date.now(),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>name: document.getElementById("taskName").value.trim(),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>assignee: document.getElementById("taskAssignee").value.trim(),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>workType: document.getElementById("taskWorkType").value.trim(),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>status: document.getElementById("taskStatus").value,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>start: document.getElementById("taskStart").value,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>end: document.getElementById("taskEnd").value,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>progress: clamp(parseInt(document.getElementById("taskProgress").value||"0",10),0,100),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>tags: document.getElementById("taskTags").value.split(",").map(s=&gt;s.trim()).filter(Boolean),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>notes: document.getElementById("taskNotes").value.trim()</p>
+<p class="p1"><span class="Apple-converted-space">    </span>};</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (idStr) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const idx = tasks.findIndex(t=&gt;t.id===task.id);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (idx&gt;=0) tasks[idx]=task;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>tasks.push(task);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>saveToLS();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>clearForm();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>renderAll();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function editTask(id){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const t = getTask(id); if (!t) return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("editId").value = t.id;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskName").value = t.name;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskAssignee").value = t.assignee;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskWorkType").value = t.workType||"";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskStatus").value = t.status;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskStart").value = t.start;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskEnd").value = t.end;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskProgress").value = t.progress;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskTags").value = (t.tags||[]).join(", ");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskNotes").value = t.notes||"";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>window.scrollTo({ top: document.getElementById("section-create").offsetTop - 8, behavior:"smooth" });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>function deleteTask(id){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (!confirm("このタスクを削除しますか？")) return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tasks = tasks.filter(t=&gt;t.id!==id);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>saveToLS(); renderAll();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById("btnReset").addEventListener("click", clearForm);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function clearForm(){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskForm").reset();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("editId").value = "";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("taskProgress").value = 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== タブ切替時の再レンダリング（重要） =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const viewTabs = document.getElementById('viewTabs');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>viewTabs.addEventListener('shown.bs.tab', (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const target = e.target.getAttribute('data-bs-target');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const filtered = applyFilter(tasks);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (target === '#tab-timeline') { renderGantt(filtered); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (target === '#tab-calendar') { renderCalendar(filtered); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (target === '#tab-table')<span class="Apple-converted-space">    </span>{ renderTable(filtered); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (target === '#tab-kanban') <span class="Apple-converted-space">  </span>{ renderKanban(filtered); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ===== 初期化 =====</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderAll();</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
 </body>
 </html>
