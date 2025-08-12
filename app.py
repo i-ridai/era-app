@@ -1,19 +1,18 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    # ルートに来たら管理画面へ
-    return redirect(url_for("admin"))
-
 @app.route("/admin")
-def admin():
-    return render_template("admin.html")
+def admin_dashboard():
+    return render_template("admin_dashboard.html")
 
-@app.route("/worker")
-def worker():
-    return render_template("worker.html")
+@app.route("/admin/task-create")
+def admin_task_create():
+    return render_template("admin_task_create.html")
+
+@app.route("/admin/task-view")
+def admin_task_view():
+    return render_template("admin_task_view.html")
 
 if __name__ == "__main__":
-    app.run(debug=True)  # ローカル実行用
+    app.run(debug=True, host="0.0.0.0", port=5000)
