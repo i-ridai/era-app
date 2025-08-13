@@ -1,97 +1,356 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Era タスク一覧</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-body { padding-top: 70px; }
-.task-card { cursor:pointer; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Era タスク一覧</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/main.min.css" rel="stylesheet"/>
+  <style>
+    :root{ --bs-primary:#00BFFF; }
+    body { background:#fff; padding-top: 70px; }
+    .nav-link.active { font-weight: 600; }
+    .badge-tag { background:#e8f7ff; border:1px solid #bfe9ff; color:#086ea1; }
+    /* Kanban */
+    .kanban-wrap{ gap: 1.5rem; }
+    .kanban-col{ flex:1; background:#f8fbff; padding:12px; border-radius:12px; min-height:120px; border:1px dashed #bfe9ff; }
+    .kanban-card{ background:#fff; border-left:6px solid #00BFFF; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); padding:12px; margin-bottom:12px; cursor:grab; }
+    .kanban-card:active{ cursor:grabbing; }
+    .progress-track{ position:relative;height:10px;background:#eef7ff;border-radius:6px;margin-top:8px;user-select:none; }
+    .progress-fill{ height:10px;background:#00BFFF;border-radius:6px;width:0%; }
+    .progress-label{ font-size:12px;color:#0d6efd; }
+    #gantt{ overflow-x:auto; }
+    .fc .fc-button-primary { background:#00BFFF;border-color:#00BFFF; }
+  </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">Era 管理者</a>
-    <div class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="/admin">ダッシュボード</a></li>
-        <li class="nav-item"><a class="nav-link" href="/admin/task-create">タスク生成</a></li>
-        <li class="nav-item"><a class="nav-link active" href="/admin/task-view">タスク一覧</a></li>
-      </ul>
+  <!-- Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Era 管理者</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link" href="/admin">ダッシュボード</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/task-create">タスク生成</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/admin/task-view">タスク一覧</a></li>
+        </ul>
+      </div>
     </div>
-  </div>
-</nav>
-<div class="container">
-<ul class="nav nav-tabs mt-3">
-  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#kanban">カンバン</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#gantt">ガント</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#calendar">カレンダー</a></li>
-  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#table">テーブル</a></li>
-</ul>
-<div class="tab-content mt-3">
-  <div class="tab-pane fade show active" id="kanban">
-    <div id="kanban-board" class="row"></div>
-  </div>
-  <div class="tab-pane fade" id="gantt"><p>ガントビューは後日実装</p></div>
-  <div class="tab-pane fade" id="calendar"><p>カレンダーは後日実装</p></div>
-  <div class="tab-pane fade" id="table">
-    <table class="table table-bordered"><thead><tr><th>タスク名</th><th>担当者</th><th>開始日</th><th>終了日</th><th>ステータス</th></tr></thead><tbody id="table-body"></tbody></table>
-  </div>
-</div>
-</div>
+  </nav>
 
-<!-- モーダル -->
-<div class="modal fade" id="taskModal" tabindex="-1">
-  <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">タスク詳細</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button><button class="btn btn-primary" id="edit-btn">編集</button></div>
-  </div></div>
-</div>
+  <div class="container">
+    <!-- View tabs -->
+    <ul class="nav nav-tabs mt-3" id="viewTabs" role="tablist">
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-kanban" type="button">カンバン</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gantt" type="button">ガント</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-calendar" type="button">カレンダー</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-table" type="button">テーブル</button></li>
+    </ul>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-let tasks = JSON.parse(localStorage.getItem('era_tasks_v1')||'[]');
-if(tasks.length===0){
-  tasks = [
-    {title:"足場設置", assignee:"佐藤", start:"2025-08-13", end:"2025-08-14", status:"進行中"},
-    {title:"内装工事", assignee:"鈴木", start:"2025-08-15", end:"2025-08-20", status:"未着手"},
-    {title:"外壁塗装", assignee:"高橋", start:"2025-08-16", end:"2025-08-18", status:"完了"}
-  ];
-  localStorage.setItem('era_tasks_v1', JSON.stringify(tasks));
-}
-function renderKanban(){
-  const statuses = ["未着手","進行中","完了"];
-  document.getElementById('kanban-board').innerHTML = statuses.map(status=>`
-    <div class="col">
-      <div class="card">
-        <div class="card-header bg-light">${status}</div>
-        <div class="card-body">
-          ${tasks.filter(t=>t.status===status).map(t=>`<div class="task-card card p-2 mb-2" onclick='showModal(${JSON.stringify(t)})'>${t.title}</div>`).join("")}
+    <div class="tab-content mt-3">
+      <!-- Kanban -->
+      <div class="tab-pane fade show active" id="tab-kanban">
+        <div class="d-flex kanban-wrap">
+          <div class="kanban-col" data-status="未着手" ondragover="event.preventDefault()" ondrop="onDrop(event,'未着手')">
+            <h6 class="mb-2">未着手</h6><div id="kanban-todo"></div>
+          </div>
+          <div class="kanban-col" data-status="進行中" ondragover="event.preventDefault()" ondrop="onDrop(event,'進行中')">
+            <h6 class="mb-2">進行中</h6><div id="kanban-doing"></div>
+          </div>
+          <div class="kanban-col" data-status="完了" ondragover="event.preventDefault()" ondrop="onDrop(event,'完了')">
+            <h6 class="mb-2">完了</h6><div id="kanban-done"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gantt -->
+      <div class="tab-pane fade" id="tab-gantt"><div id="gantt"></div></div>
+
+      <!-- Calendar -->
+      <div class="tab-pane fade" id="tab-calendar"><div id="calendar"></div></div>
+
+      <!-- Table -->
+      <div class="tab-pane fade" id="tab-table">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light"><tr>
+              <th>タスク名</th><th>担当</th><th>開始</th><th>期限</th><th>進捗</th><th>ステータス</th><th>タグ</th>
+            </tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
         </div>
       </div>
     </div>
-  `).join("");
-}
-function renderTable(){
-  document.getElementById('table-body').innerHTML = tasks.map(t=>`
-    <tr onclick='showModal(${JSON.stringify(t)})'><td>${t.title}</td><td>${t.assignee}</td><td>${t.start}</td><td>${t.end}</td><td>${t.status}</td></tr>
-  `).join("");
-}
-function showModal(task){
-  document.getElementById('modal-body').innerHTML = `
-    <p>タスク名: ${task.title}</p>
-    <p>担当者: ${task.assignee}</p>
-    <p>期間: ${task.start}〜${task.end}</p>
-    <p>ステータス: ${task.status}</p>
-  `;
-  new bootstrap.Modal(document.getElementById('taskModal')).show();
-}
-renderKanban();
-renderTable();
-</script>
+  </div>
+
+  <!-- 詳細・編集モーダル -->
+  <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="taskModalTitle">タスク詳細</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button></div>
+      <div class="modal-body" id="taskModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnEdit">編集</button>
+        <button class="btn btn-success d-none" id="btnSave">保存</button>
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">閉じる</button>
+      </div>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script>
+  // ===== LocalStorage helpers =====
+  const LS_KEY = "era_tasks_v1";
+  function seed(){
+    return [
+      { id: 1, title:"基礎工事", assignee:"佐藤", start:"2025-08-01", end:"2025-08-10", progress:40, status:"未着手", tags:["工程A","重要"], notes:"地盤調査完了後に開始" },
+      { id: 2, title:"足場組立", assignee:"田中", start:"2025-08-05", end:"2025-08-15", progress:60, status:"進行中", tags:["安全","外構"], notes:"足場資材の在庫確認済み" },
+      { id: 3, title:"配管工事", assignee:"佐藤", start:"2025-08-10", end:"2025-08-20", progress:20, status:"完了", tags:["水道","住宅"], notes:"施工図面を確認" }
+    ];
+  }
+  function normalize(list){
+    // 既存データとのフィールド差異を吸収（name -> title など）
+    let changed=false;
+    const out=(list||[]).map((t,i)=>{
+      const id = t.id ?? (i+1);
+      const title = t.title ?? t.name ?? ("タスク"+id);
+      const progress = (typeof t.progress==="number") ? t.progress : 0;
+      const status = t.status ?? "未着手";
+      return { id, title, assignee:t.assignee||"", start:t.start||"", end:t.end||"", status, progress, tags:t.tags||[], notes:t.notes||"" };
+    });
+    return out;
+  }
+  function loadTasks(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw){ const d=seed(); localStorage.setItem(LS_KEY, JSON.stringify(d)); return d; }
+      return normalize(JSON.parse(raw));
+    }catch(e){
+      const d=seed(); localStorage.setItem(LS_KEY, JSON.stringify(d)); return d;
+    }
+  }
+  function saveTasks(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)); }
+
+  // ===== Kanban =====
+  function renderKanban(list){
+    const map = { "未着手":"kanban-todo", "進行中":"kanban-doing", "完了":"kanban-done" };
+    Object.values(map).forEach(id=>document.getElementById(id).innerHTML="");
+    list.forEach(t=>{
+      const el=document.createElement("div");
+      el.className="kanban-card";
+      el.draggable=true;
+      el.addEventListener("dragstart", e=>{ e.dataTransfer.setData("text/plain", String(t.id)); });
+      el.addEventListener("click", ()=> openDetail(t.id));
+      const tags=(t.tags||[]).map(v=>`<span class="badge rounded-pill badge-tag me-1">${v}</span>`).join("");
+      el.innerHTML = `
+        <div class="fw-bold text-truncate" title="${t.title}">${t.title}</div>
+        <div class="small text-muted">${t.assignee||"-"}｜${t.start}→${t.end}</div>
+        <div class="mt-1">${tags}</div>
+        <div class="progress-label mt-1">${t.progress}%</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${t.progress}%"></div></div>`;
+
+      // 横ドラッグで進捗調整
+      const track=el.querySelector('.progress-track'); let dragging=false;
+      const update=(ev)=>{
+        const r=track.getBoundingClientRect();
+        const ratio=Math.max(0,Math.min(1,(ev.clientX-r.left)/r.width));
+        const pct=Math.round(ratio*100);
+        const tasks=loadTasks();
+        const i=tasks.findIndex(x=>x.id===t.id);
+        if(i>=0){ tasks[i].progress=pct; saveTasks(tasks); }
+        track.querySelector('.progress-fill').style.width=pct+'%';
+        el.querySelector('.progress-label').textContent=pct+'%';
+      };
+      track.addEventListener('mousedown',e=>{e.stopPropagation(); dragging=true; update(e);});
+      window.addEventListener('mousemove',e=>{ if(dragging) update(e); });
+      window.addEventListener('mouseup',()=>{ dragging=false; });
+
+      document.getElementById(map[t.status] || "kanban-todo").appendChild(el);
+    });
+  }
+  function onDrop(ev,status){
+    const id = parseInt(ev.dataTransfer.getData("text/plain"),10);
+    const tasks = loadTasks();
+    const i = tasks.findIndex(x=>x.id===id);
+    if(i>=0){ tasks[i].status = status; saveTasks(tasks); renderAll(); }
+  }
+
+  // ===== Gantt =====
+  let gantt;
+  function renderGantt(list){
+    document.getElementById("gantt").innerHTML="";
+    if(!list.length) return;
+    const data = list.map(t=>({ id:t.id, name:t.title, start:t.start, end:t.end, progress:t.progress }));
+    gantt = new Gantt("#gantt", data, {
+      on_click:(task)=> openDetail(task.id),
+      on_date_change:(task,start,end)=>{
+        const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===task.id);
+        if(i>=0){ tasks[i].start=toISO(start); tasks[i].end=toISO(end); saveTasks(tasks); renderAll(); }
+      },
+      on_progress_change:(task,progress)=>{
+        const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===task.id);
+        if(i>=0){ tasks[i].progress=Math.round(progress); saveTasks(tasks); renderKanban(loadTasks()); }
+      }
+    });
+  }
+
+  // ===== Calendar =====
+  let calendar;
+  function addOneDay(iso){ const d=new Date(iso); d.setDate(d.getDate()+1); return toISO(d); }
+  function renderCalendar(list){
+    const el = document.getElementById("calendar");
+    if(calendar) calendar.destroy();
+    const events = list.map(t=>({ id:String(t.id), title:t.title, start:t.start, end:addOneDay(t.end), editable:true }));
+    calendar = new FullCalendar.Calendar(el, {
+      initialView: "dayGridMonth",
+      events,
+      editable: true,
+      eventClick: (info)=> openDetail(parseInt(info.event.id,10)),
+      eventDrop: (info)=> {
+        const id=parseInt(info.event.id,10);
+        const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===id);
+        if(i>=0){
+          tasks[i].start = toISO(info.event.start);
+          const endISO = toISO(info.event.end ?? info.event.start);
+          // FCのendは排他的扱いなので -1日補正
+          tasks[i].end = toISO(new Date(new Date(endISO).getTime() - 24*60*60*1000));
+          saveTasks(tasks); renderAll();
+        }
+      },
+      eventResize: (info)=> {
+        const id=parseInt(info.event.id,10);
+        const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===id);
+        if(i>=0){
+          const endISO = toISO(info.event.end);
+          tasks[i].end = toISO(new Date(new Date(endISO).getTime() - 24*60*60*1000));
+          saveTasks(tasks); renderAll();
+        }
+      }
+    });
+    calendar.render();
+  }
+
+  // ===== Table =====
+  function renderTable(list){
+    const tbody=document.getElementById("tableBody"); tbody.innerHTML="";
+    list.forEach(t=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td><a href="#" onclick="openDetail(${t.id});return false;">${t.title}</a></td>
+        <td>${t.assignee||"-"}</td>
+        <td>${t.start}</td>
+        <td>${t.end}</td>
+        <td>${t.progress||0}%</td>
+        <td>${t.status}</td>
+        <td>${(t.tags||[]).map(v=>`<span class='badge rounded-pill badge-tag me-1'>${v}</span>`).join("")}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ===== Detail / Edit modal =====
+  const modal = new bootstrap.Modal(document.getElementById("taskModal"));
+  let currentId = null;
+  function toISO(d){ return new Date(d).toISOString().slice(0,10); }
+
+  function renderDetail(t){
+    document.getElementById("taskModalTitle").textContent = t.title;
+    document.getElementById("taskModalBody").innerHTML = `
+      <div class="row g-2">
+        <div class="col-md-6"><span class="text-muted">担当者：</span>${t.assignee||"-"}</div>
+        <div class="col-md-6"><span class="text-muted">進捗：</span>${t.progress||0}%</div>
+        <div class="col-md-6"><span class="text-muted">開始：</span>${t.start}</div>
+        <div class="col-md-6"><span class="text-muted">期限：</span>${t.end}</div>
+        <div class="col-md-6"><span class="text-muted">ステータス：</span>${t.status}</div>
+        <div class="col-md-12"><span class="text-muted">タグ：</span>${(t.tags||[]).map(x=>`<span class='badge rounded-pill badge-tag me-1'>${x}</span>`).join("")||"-"}</div>
+        <div class="col-12"><span class="text-muted">備考：</span><div class="border rounded p-2 bg-light">${(t.notes||"").replace(/\\n/g,"<br>")}</div></div>
+      </div>`;
+    document.getElementById("btnEdit").classList.remove("d-none");
+    document.getElementById("btnSave").classList.add("d-none");
+  }
+  function renderEditForm(t){
+    document.getElementById("taskModalTitle").textContent = "タスク編集";
+    document.getElementById("taskModalBody").innerHTML = `
+      <form id="editForm" class="row g-2">
+        <div class="col-md-12"><label class="form-label">タスク名</label><input class="form-control" id="e_title" value="${t.title}"></div>
+        <div class="col-md-6"><label class="form-label">担当者</label><input class="form-control" id="e_assignee" value="${t.assignee||""}"></div>
+        <div class="col-md-3"><label class="form-label">開始</label><input type="date" class="form-control" id="e_start" value="${t.start}"></div>
+        <div class="col-md-3"><label class="form-label">期限</label><input type="date" class="form-control" id="e_end" value="${t.end}"></div>
+        <div class="col-md-3"><label class="form-label">進捗(%)</label><input type="number" min="0" max="100" class="form-control" id="e_progress" value="${t.progress||0}"></div>
+        <div class="col-md-3"><label class="form-label">ステータス</label>
+          <select class="form-select" id="e_status">
+            <option ${t.status==="未着手"?"selected":""}>未着手</option>
+            <option ${t.status==="進行中"?"selected":""}>進行中</option>
+            <option ${t.status==="完了"?"selected":""}>完了</option>
+          </select>
+        </div>
+        <div class="col-md-12"><label class="form-label">タグ（カンマ区切り）</label><input class="form-control" id="e_tags" value="${(t.tags||[]).join(", ")}"></div>
+        <div class="col-12"><label class="form-label">備考</label><textarea class="form-control" id="e_notes" rows="3">${t.notes||""}</textarea></div>
+      </form>`;
+    document.getElementById("btnEdit").classList.add("d-none");
+    document.getElementById("btnSave").classList.remove("d-none");
+  }
+
+  function openDetail(id){
+    const t = loadTasks().find(x=>x.id===id); if(!t) return;
+    currentId = id;
+    renderDetail(t);
+    modal.show();
+  }
+
+  document.getElementById("btnEdit").addEventListener("click", ()=>{
+    const t = loadTasks().find(x=>x.id===currentId); if(!t) return;
+    renderEditForm(t);
+  });
+  document.getElementById("btnSave").addEventListener("click", ()=>{
+    const tasks = loadTasks();
+    const i = tasks.findIndex(x=>x.id===currentId); if(i<0) return;
+    const get = id => document.getElementById(id).value;
+    const tags = get("e_tags").split(",").map(s=>s.trim()).filter(Boolean);
+    tasks[i] = {
+      ...tasks[i],
+      title: get("e_title"),
+      assignee: get("e_assignee"),
+      start: get("e_start"),
+      end: get("e_end"),
+      progress: Math.max(0, Math.min(100, parseInt(get("e_progress")||"0",10))),
+      status: document.getElementById("e_status").value,
+      tags,
+      notes: document.getElementById("e_notes").value
+    };
+    saveTasks(tasks);
+    renderDetail(tasks[i]);
+    renderAll();
+  });
+
+  // ===== Utilities & render orchestrator =====
+  function renderTableAndBoards(){
+    const list = loadTasks();
+    renderKanban(list);
+    renderTable(list);
+  }
+  function renderAll(){
+    const list = loadTasks();
+    renderKanban(list);
+    renderGantt(list);
+    renderCalendar(list);
+    renderTable(list);
+  }
+
+  // ===== Init =====
+  // Build Kanban columns containers
+  document.getElementById("kanban-todo").innerHTML="";
+  document.getElementById("kanban-doing").innerHTML="";
+  document.getElementById("kanban-done").innerHTML="";
+  renderAll();
+
+  // Re-render heavy views after tab change to avoid layout issues
+  document.getElementById("viewTabs").addEventListener("shown.bs.tab", (e)=>{
+    const target = e.target.getAttribute("data-bs-target");
+    if(target==="#tab-gantt" || target==="#tab-calendar") renderAll();
+  });
+  </script>
 </body>
 </html>
