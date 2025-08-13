@@ -1,32 +1,97 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>Era 管理 - タスク一覧</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Era タスク一覧</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body { padding-top: 70px; }
+.task-card { cursor:pointer; }
+</style>
 </head>
-<body class="p-4">
-    <header class="mb-4">
-        <a href="/admin" class="btn btn-light">ダッシュボード</a>
-        <a href="/admin/task-create" class="btn btn-light">タスク生成</a>
-        <a href="/admin/task-view" class="btn btn-primary">タスク一覧</a>
-    </header>
-    <h1>タスク一覧</h1>
-    <div class="row">
-        {% for task in tasks %}
-        <div class="col-md-4">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">{{ task.title }}</h5>
-                    <p>{{ task.content }}</p>
-                    <p>{{ task.assignee }} | {{ task.start }} → {{ task.end }}</p>
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: {{ task.progress }}%;" aria-valuenow="{{ task.progress }}" aria-valuemin="0" aria-valuemax="100">{{ task.progress }}%</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Era 管理者</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="/admin">ダッシュボード</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/task-create">タスク生成</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/admin/task-view">タスク一覧</a></li>
+      </ul>
     </div>
+  </div>
+</nav>
+<div class="container">
+<ul class="nav nav-tabs mt-3">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#kanban">カンバン</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#gantt">ガント</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#calendar">カレンダー</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#table">テーブル</a></li>
+</ul>
+<div class="tab-content mt-3">
+  <div class="tab-pane fade show active" id="kanban">
+    <div id="kanban-board" class="row"></div>
+  </div>
+  <div class="tab-pane fade" id="gantt"><p>ガントビューは後日実装</p></div>
+  <div class="tab-pane fade" id="calendar"><p>カレンダーは後日実装</p></div>
+  <div class="tab-pane fade" id="table">
+    <table class="table table-bordered"><thead><tr><th>タスク名</th><th>担当者</th><th>開始日</th><th>終了日</th><th>ステータス</th></tr></thead><tbody id="table-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<!-- モーダル -->
+<div class="modal fade" id="taskModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">タスク詳細</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button><button class="btn btn-primary" id="edit-btn">編集</button></div>
+  </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let tasks = JSON.parse(localStorage.getItem('era_tasks_v1')||'[]');
+if(tasks.length===0){
+  tasks = [
+    {title:"足場設置", assignee:"佐藤", start:"2025-08-13", end:"2025-08-14", status:"進行中"},
+    {title:"内装工事", assignee:"鈴木", start:"2025-08-15", end:"2025-08-20", status:"未着手"},
+    {title:"外壁塗装", assignee:"高橋", start:"2025-08-16", end:"2025-08-18", status:"完了"}
+  ];
+  localStorage.setItem('era_tasks_v1', JSON.stringify(tasks));
+}
+function renderKanban(){
+  const statuses = ["未着手","進行中","完了"];
+  document.getElementById('kanban-board').innerHTML = statuses.map(status=>`
+    <div class="col">
+      <div class="card">
+        <div class="card-header bg-light">${status}</div>
+        <div class="card-body">
+          ${tasks.filter(t=>t.status===status).map(t=>`<div class="task-card card p-2 mb-2" onclick='showModal(${JSON.stringify(t)})'>${t.title}</div>`).join("")}
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+function renderTable(){
+  document.getElementById('table-body').innerHTML = tasks.map(t=>`
+    <tr onclick='showModal(${JSON.stringify(t)})'><td>${t.title}</td><td>${t.assignee}</td><td>${t.start}</td><td>${t.end}</td><td>${t.status}</td></tr>
+  `).join("");
+}
+function showModal(task){
+  document.getElementById('modal-body').innerHTML = `
+    <p>タスク名: ${task.title}</p>
+    <p>担当者: ${task.assignee}</p>
+    <p>期間: ${task.start}〜${task.end}</p>
+    <p>ステータス: ${task.status}</p>
+  `;
+  new bootstrap.Modal(document.getElementById('taskModal')).show();
+}
+renderKanban();
+renderTable();
+</script>
 </body>
 </html>

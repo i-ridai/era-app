@@ -1,32 +1,61 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>Era 管理 - ダッシュボード</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Era ダッシュボード</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    body { padding-top: 70px; }
+</style>
 </head>
-<body class="p-4">
-    <header class="mb-4">
-        <a href="/admin" class="btn btn-primary">ダッシュボード</a>
-        <a href="/admin/task-create" class="btn btn-light">タスク生成</a>
-        <a href="/admin/task-view" class="btn btn-light">タスク一覧</a>
-    </header>
-    <h1>ダッシュボード</h1>
-    <div class="row">
-        {% for task in tasks %}
-        <div class="col-md-4">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">{{ task.title }}</h5>
-                    <p>{{ task.content }}</p>
-                    <p>{{ task.assignee }} | {{ task.start }} → {{ task.end }}</p>
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: {{ task.progress }}%;" aria-valuenow="{{ task.progress }}" aria-valuemin="0" aria-valuemax="100">{{ task.progress }}%</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Era 管理者</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link active" href="/admin">ダッシュボード</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/task-create">タスク生成</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/task-view">タスク一覧</a></li>
+      </ul>
     </div>
+  </div>
+</nav>
+<div class="container">
+  <h3>タスクサマリー</h3>
+  <div id="summary" class="row"></div>
+  <h4 class="mt-4">近日のタスク</h4>
+  <table class="table table-bordered">
+    <thead><tr><th>タスク名</th><th>担当者</th><th>開始日</th><th>終了日</th><th>ステータス</th></tr></thead>
+    <tbody id="recent-tasks"></tbody>
+  </table>
+</div>
+<script>
+let tasks = JSON.parse(localStorage.getItem('era_tasks_v1')||'[]');
+if(tasks.length===0){
+  tasks = [
+    {title:"足場設置", assignee:"佐藤", start:"2025-08-13", end:"2025-08-14", status:"進行中"},
+    {title:"内装工事", assignee:"鈴木", start:"2025-08-15", end:"2025-08-20", status:"未着手"},
+    {title:"外壁塗装", assignee:"高橋", start:"2025-08-16", end:"2025-08-18", status:"完了"}
+  ];
+  localStorage.setItem('era_tasks_v1', JSON.stringify(tasks));
+}
+let total = tasks.length;
+let inProgress = tasks.filter(t=>t.status==="進行中").length;
+let completed = tasks.filter(t=>t.status==="完了").length;
+let today = new Date().toISOString().split("T")[0];
+let todayCount = tasks.filter(t=>t.start<=today && t.end>=today).length;
+document.getElementById('summary').innerHTML = `
+<div class="col"><div class="card p-3"><h5>総タスク数</h5><p>${total}</p></div></div>
+<div class="col"><div class="card p-3"><h5>進行中</h5><p>${inProgress}</p></div></div>
+<div class="col"><div class="card p-3"><h5>完了</h5><p>${completed}</p></div></div>
+<div class="col"><div class="card p-3"><h5>本日</h5><p>${todayCount}</p></div></div>
+`;
+document.getElementById('recent-tasks').innerHTML = tasks.map(t=>`
+<tr><td>${t.title}</td><td>${t.assignee}</td><td>${t.start}</td><td>${t.end}</td><td>${t.status}</td></tr>
+`).join("");
+</script>
 </body>
 </html>
