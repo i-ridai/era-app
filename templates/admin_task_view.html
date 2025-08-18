@@ -8,18 +8,87 @@
   <link rel="stylesheet" href="https://unpkg.com/frappe-gantt/dist/frappe-gantt.css"/>
   <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/main.min.css" rel="stylesheet"/>
   <style>
-    :root{ --bs-primary:#00BFFF; }
-    body{ background:#fff; padding-top:70px; }
-    .badge-tag { background:#e8f7ff; border:1px solid #bfe9ff; color:#086ea1; }
-    .kanban-wrap{ gap: 1.5rem; }
-    .kanban-col{ flex:1; background:#f8fbff; padding:12px; border-radius:12px; min-height:120px; border:1px dashed #bfe9ff; }
-    .kanban-card{ background:#fff; border-left:6px solid #00BFFF; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); padding:12px; margin-bottom:12px; cursor:grab; }
-    .kanban-card:active{ cursor:grabbing; }
-    .progress-track{ position:relative;height:10px;background:#eef7ff;border-radius:6px;margin-top:8px;user-select:none; }
-    .progress-fill{ height:10px;background:#00BFFF;border-radius:6px;width:0%; }
-    .progress-label{ font-size:12px;color:#0d6efd; }
-    #gantt{ overflow-x:auto; }
-    .fc .fc-button-primary { background:#00BFFF;border-color:#00BFFF; }
+    :root {
+      --bs-primary: #007BFF; /* A slightly more standard, modern blue */
+      --bs-light-blue: #f0f7ff;
+      --bs-light-gray: #f8f9fa;
+      --bs-border-color: #dee2e6;
+    }
+    body {
+      background-color: var(--bs-light-gray); /* Lighter gray for less contrast */
+      padding-top: 70px;
+    }
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0,0,0,.05); /* Softer shadow for the navbar */
+    }
+    .badge-tag {
+      background-color: #e6f2ff;
+      border: 1px solid #b3d7ff;
+      color: #0056b3;
+      font-weight: 500;
+    }
+    .kanban-wrap {
+      gap: 1.5rem;
+    }
+    .kanban-col {
+      flex: 1;
+      background-color: #fff; /* White background for columns */
+      padding: 1rem;
+      border-radius: 12px;
+      min-height: 150px;
+      border: 1px solid var(--bs-border-color); /* Solid, subtle border */
+      box-shadow: 0 4px 12px rgba(0,0,0,.04);
+    }
+    .kanban-card {
+      background-color: #fff;
+      border-left: 5px solid var(--bs-primary);
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,.08); /* More pronounced shadow */
+      padding: 1rem;
+      margin-bottom: 1rem;
+      cursor: grab;
+      transition: box-shadow 0.2s ease-in-out;
+    }
+    .kanban-card:hover {
+      box-shadow: 0 6px 16px rgba(0,0,0,.12); /* Shadow deepens on hover */
+    }
+    .kanban-card:active {
+      cursor: grabbing;
+      box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+    .progress-track {
+      position: relative;
+      height: 8px;
+      background-color: #e9ecef;
+      border-radius: 4px;
+      margin-top: 8px;
+      user-select: none;
+      cursor: pointer;
+    }
+    .progress-fill {
+      height: 100%;
+      background-color: var(--bs-primary);
+      border-radius: 4px;
+    }
+    .progress-label {
+      font-size: 0.8rem;
+      color: #555;
+    }
+    #gantt {
+      overflow-x: auto;
+    }
+    /* FullCalendar button color override */
+    .fc .fc-button-primary {
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+    .modal-header {
+        background-color: var(--bs-primary);
+        color: white;
+    }
+    .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
   </style>
 </head>
 <body>
@@ -34,7 +103,12 @@
     </div>
   </nav>
 
-  <main class="container">
+  <main class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">タスク一覧</h1>
+        <a href="/admin/task-create" class="btn btn-primary">新しいタスクを作成</a>
+    </div>
+
     <ul class="nav nav-tabs mt-3" id="viewTabs" role="tablist">
       <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-kanban" type="button">カンバン</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gantt" type="button">ガント</button></li>
@@ -47,26 +121,22 @@
       <div class="tab-pane fade show active" id="tab-kanban">
         <div class="d-flex kanban-wrap">
           <div class="kanban-col" data-status="未着手" ondragover="event.preventDefault()" ondrop="onDrop(event,'未着手')">
-            <h6 class="mb-2">未着手</h6><div id="kanban-todo"></div>
+            <h6 class="mb-3 fw-bold text-secondary">未着手</h6><div id="kanban-todo"></div>
           </div>
           <div class="kanban-col" data-status="進行中" ondragover="event.preventDefault()" ondrop="onDrop(event,'進行中')">
-            <h6 class="mb-2">進行中</h6><div id="kanban-doing"></div>
+            <h6 class="mb-3 fw-bold text-secondary">進行中</h6><div id="kanban-doing"></div>
           </div>
           <div class="kanban-col" data-status="完了" ondragover="event.preventDefault()" ondrop="onDrop(event,'完了')">
-            <h6 class="mb-2">完了</h6><div id="kanban-done"></div>
+            <h6 class="mb-3 fw-bold text-secondary">完了</h6><div id="kanban-done"></div>
           </div>
         </div>
       </div>
 
-      <!-- Gantt -->
-      <div class="tab-pane fade" id="tab-gantt"><div id="gantt"></div></div>
-
-      <!-- Calendar -->
-      <div class="tab-pane fade" id="tab-calendar"><div id="calendar"></div></div>
-
-      <!-- Table -->
+      <!-- Gantt, Calendar, Table (no major visual changes needed here, functionality is key) -->
+      <div class="tab-pane fade" id="tab-gantt"><div class="bg-white p-3 rounded shadow-sm"><div id="gantt"></div></div></div>
+      <div class="tab-pane fade" id="tab-calendar"><div class="bg-white p-3 rounded shadow-sm"><div id="calendar"></div></div></div>
       <div class="tab-pane fade" id="tab-table">
-        <div class="table-responsive">
+        <div class="table-responsive bg-white p-3 rounded shadow-sm">
           <table class="table table-hover align-middle">
             <thead class="table-light"><tr>
               <th>タスク名</th><th>種類</th><th>担当</th><th>開始予定</th><th>完了予定</th><th>進捗</th><th>状態</th>
@@ -78,12 +148,12 @@
     </div>
   </main>
 
-  <!-- 詳細・編集モーダル -->
+  <!-- Detail/Edit Modal -->
   <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
       <div class="modal-header"><h5 class="modal-title" id="taskModalTitle">タスク詳細</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button></div>
-      <div class="modal-body" id="taskModalBody"></div>
+      <div class="modal-body" id="taskModalBody" style="background-color: #fcfdff;"></div>
       <div class="modal-footer">
         <button class="btn btn-primary" id="btnEdit">編集</button>
         <button class="btn btn-success d-none" id="btnSave">保存</button>
@@ -124,9 +194,7 @@
       const startPlanned = t.startPlanned ?? t.start ?? "";
       const endPlanned = t.endPlanned ?? t.end ?? "";
       return {
-        id,
-        title,
-        type,
+        id, title, type,
         assignee: t.assignee ?? "",
         startPlanned,
         startActual: t.startActual ?? "",
@@ -164,17 +232,19 @@
       const tags=(t.tags||[]).map(v=>`<span class="badge rounded-pill badge-tag me-1">${v}</span>`).join("");
       el.innerHTML=`
         <div class="fw-bold text-truncate" title="${t.title}">${t.title}</div>
-        <div class="small text-muted">${t.type||"-"} ｜ ${t.assignee||"-"}</div>
-        <div class="small text-muted">${t.startPlanned} → ${t.endPlanned}</div>
-        <div class="mt-1">${tags}</div>
-        <div class="progress-label mt-1">${t.progress||0}%</div>
+        <div class="small text-muted mb-2">${t.type||"-"} ｜ ${t.assignee||"-"}</div>
+        <div class="small text-muted">期間: ${t.startPlanned} → ${t.endPlanned}</div>
+        <div class="mt-2">${tags}</div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="progress-label">${t.progress||0}%</div>
+        </div>
         <div class="progress-track"><div class="progress-fill" style="width:${t.progress||0}%"></div></div>`;
 
       const track=el.querySelector('.progress-track'); let dragging=false;
       const update=(ev)=>{
         const r=track.getBoundingClientRect();
         const ratio=Math.max(0,Math.min(1,(ev.clientX-r.left)/r.width));
-        const pct=Math.round(ratio*100);
+        const pct=Math.round(ratio*20)/20 * 100 / 20; // Snap to 5% increments
         const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===t.id);
         if(i>=0){ tasks[i].progress=pct; saveTasks(tasks); }
         track.querySelector('.progress-fill').style.width=pct+'%';
@@ -182,7 +252,7 @@
       };
       track.addEventListener('mousedown',e=>{e.stopPropagation(); dragging=true; update(e);});
       window.addEventListener('mousemove',e=>{ if(dragging) update(e); });
-      window.addEventListener('mouseup',()=>{ dragging=false; });
+      window.addEventListener('mouseup',()=>{ if (dragging) { dragging=false; renderAll(); }});
 
       document.getElementById(map[t.status]||"kanban-todo").appendChild(el);
     });
@@ -199,7 +269,7 @@
     document.getElementById("gantt").innerHTML="";
     if(!list.length) return;
     const data=list.map(t=>({
-      id:t.id, name:t.title, start:t.startPlanned, end:t.endPlanned, progress:t.progress||0
+      id:String(t.id), name:t.title, start:t.startPlanned, end:t.endPlanned, progress:t.progress||0
     }));
     gantt = new Gantt("#gantt", data, {
       on_click:(task)=> openDetail(task.id),
@@ -209,19 +279,19 @@
       },
       on_progress_change:(task,progress)=>{
         const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===task.id);
-        if(i>=0){ tasks[i].progress=Math.round(progress); saveTasks(tasks); renderKanban(loadTasks()); }
+        if(i>=0){ tasks[i].progress=Math.round(progress); saveTasks(tasks); renderAll(); }
       }
     });
   }
 
   // ---- Calendar ----
   let calendar;
-  function toISO(d){ return new Date(d).toISOString().slice(0,10); }
+  function toISO(d){ return new Date(d.valueOf() - d.getTimezoneOffset() * 60000).toISOString().slice(0,10); }
   function addOneDay(iso){ const d=new Date(iso); d.setDate(d.getDate()+1); return toISO(d); }
   function renderCalendar(list){
     const el=document.getElementById("calendar");
     if(calendar) calendar.destroy();
-    const events=list.map(t=>({ id:String(t.id), title:t.title, start:t.startPlanned, end:addOneDay(t.endPlanned), editable:true }));
+    const events=list.map(t=>({ id:String(t.id), title:t.title, start:t.startPlanned, end:addOneDay(t.endPlanned) }));
     calendar = new FullCalendar.Calendar(el, {
       initialView:"dayGridMonth",
       events,
@@ -232,8 +302,8 @@
         const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===id);
         if(i>=0){
           tasks[i].startPlanned = toISO(info.event.start);
-          const endISO = toISO(info.event.end ?? info.event.start);
-          tasks[i].endPlanned = toISO(new Date(new Date(endISO).getTime()-24*60*60*1000));
+          const end = info.event.end ? new Date(info.event.end.getTime() - 86400000) : info.event.start;
+          tasks[i].endPlanned = toISO(end);
           saveTasks(tasks); renderAll();
         }
       },
@@ -241,8 +311,8 @@
         const id=parseInt(info.event.id,10);
         const tasks=loadTasks(); const i=tasks.findIndex(x=>x.id===id);
         if(i>=0){
-          const endISO = toISO(info.event.end);
-          tasks[i].endPlanned = toISO(new Date(new Date(endISO).getTime()-24*60*60*1000));
+          const end = new Date(info.event.end.getTime() - 86400000);
+          tasks[i].endPlanned = toISO(end);
           saveTasks(tasks); renderAll();
         }
       }
@@ -261,12 +331,12 @@
         <td>${t.assignee||"-"}</td>
         <td>${t.startPlanned||"-"}</td>
         <td>${t.endPlanned||"-"}</td>
-        <td>${t.progress||0}%</td>
-        <td>${t.status}</td>`;
+        <td><div class="progress" style="height: 20px;"><div class="progress-bar" role="progressbar" style="width: ${t.progress||0}%;" aria-valuenow="${t.progress||0}" aria-valuemin="0" aria-valuemax="100">${t.progress||0}%</div></div></td>
+        <td><span class="badge bg-primary">${t.status}</span></td>`;
       tbody.appendChild(tr);
     });
   }
-
+  
   // ---- Detail / Edit modal ----
   const modal = new bootstrap.Modal(document.getElementById("taskModal"));
   let currentId=null;
@@ -274,25 +344,30 @@
   function renderDetail(t){
     document.getElementById("taskModalTitle").textContent=t.title;
     document.getElementById("taskModalBody").innerHTML=`
-      <div class="row g-2">
-        <div class="col-md-6"><span class="text-muted">種類：</span>${t.type||"-"}</div>
-        <div class="col-md-6"><span class="text-muted">担当：</span>${t.assignee||"-"}</div>
-        <div class="col-md-6"><span class="text-muted">開始予定：</span>${t.startPlanned||"-"}</div>
-        <div class="col-md-6"><span class="text-muted">開始実績：</span>${t.startActual||"-"}</div>
-        <div class="col-md-6"><span class="text-muted">完了予定：</span>${t.endPlanned||"-"}</div>
-        <div class="col-md-6"><span class="text-muted">完了実績：</span>${t.endActual||"-"}</div>
-        <div class="col-md-6"><span class="text-muted">進捗：</span>${t.progress||0}%</div>
-        <div class="col-md-6"><span class="text-muted">状態：</span>${t.status}</div>
-        <div class="col-12"><span class="text-muted">備考：</span><div class="border rounded p-2 bg-light">${(t.remarks||"").replace(/\n/g,"<br>")}</div></div>
-      </div>`;
+      <dl class="row mb-0">
+        <dt class="col-sm-3">種類</dt><dd class="col-sm-9">${t.type||"-"}</dd>
+        <dt class="col-sm-3">担当</dt><dd class="col-sm-9">${t.assignee||"-"}</dd>
+        <dt class="col-sm-3">状態</dt><dd class="col-sm-9">${t.status}</dd>
+        <dt class="col-sm-3">進捗</dt><dd class="col-sm-9">${t.progress||0}%</dd>
+        <hr class="my-2">
+        <dt class="col-sm-3">開始予定</dt><dd class="col-sm-9">${t.startPlanned||"-"}</dd>
+        <dt class="col-sm-3">開始実績</dt><dd class="col-sm-9">${t.startActual||"-"}</dd>
+        <hr class="my-2">
+        <dt class="col-sm-3">完了予定</dt><dd class="col-sm-9">${t.endPlanned||"-"}</dd>
+        <dt class="col-sm-3">完了実績</dt><dd class="col-sm-9">${t.endActual||"-"}</dd>
+        <hr class="my-2">
+        <dt class="col-sm-12">備考</dt>
+        <dd class="col-sm-12"><div class="border rounded p-2 bg-light">${(t.remarks||"").replace(/\n/g,"<br>")}</div></dd>
+      </dl>`;
     document.getElementById("btnEdit").classList.remove("d-none");
     document.getElementById("btnSave").classList.add("d-none");
   }
+
   function renderEditForm(t){
     document.getElementById("taskModalTitle").textContent="タスク編集";
     document.getElementById("taskModalBody").innerHTML=`
-      <form id="editForm" class="row g-2">
-        <div class="col-md-12"><label class="form-label">タスク名称</label><input class="form-control" id="e_title" value="${t.title}"></div>
+      <form id="editForm" class="row g-3">
+        <div class="col-12"><label class="form-label">タスク名称</label><input class="form-control" id="e_title" value="${t.title}"></div>
         <div class="col-md-6"><label class="form-label">タスク種類</label>
           <select class="form-select" id="e_type">
             <option ${t.type==="木工事"?"selected":""}>木工事</option>
@@ -311,18 +386,18 @@
             <option ${t.assignee==="高橋"?"selected":""}>高橋</option>
           </select>
         </div>
-        <div class="col-md-3"><label class="form-label">開始予定</label><input type="date" class="form-control" id="e_startPlanned" value="${t.startPlanned||""}"></div>
-        <div class="col-md-3"><label class="form-label">開始実績</label><input type="date" class="form-control" id="e_startActual" value="${t.startActual||""}"></div>
-        <div class="col-md-3"><label class="form-label">完了予定</label><input type="date" class="form-control" id="e_endPlanned" value="${t.endPlanned||""}"></div>
-        <div class="col-md-3"><label class="form-label">完了実績</label><input type="date" class="form-control" id="e_endActual" value="${t.endActual||""}"></div>
-        <div class="col-md-3"><label class="form-label">ステータス</label>
+        <div class="col-md-6"><label class="form-label">開始予定</label><input type="date" class="form-control" id="e_startPlanned" value="${t.startPlanned||""}"></div>
+        <div class="col-md-6"><label class="form-label">完了予定</label><input type="date" class="form-control" id="e_endPlanned" value="${t.endPlanned||""}"></div>
+        <div class="col-md-6"><label class="form-label">開始実績</label><input type="date" class="form-control" id="e_startActual" value="${t.startActual||""}"></div>
+        <div class="col-md-6"><label class="form-label">完了実績</label><input type="date" class="form-control" id="e_endActual" value="${t.endActual||""}"></div>
+        <div class="col-md-6"><label class="form-label">ステータス</label>
           <select class="form-select" id="e_status">
             <option ${t.status==="未着手"?"selected":""}>未着手</option>
             <option ${t.status==="進行中"?"selected":""}>進行中</option>
             <option ${t.status==="完了"?"selected":""}>完了</option>
           </select>
         </div>
-        <div class="col-12"><label class="form-label">備考</label><textarea class="form-control" id="e_remarks" rows="3">${t.remarks or ""}</textarea></div>
+        <div class="col-12"><label class="form-label">備考</label><textarea class="form-control" id="e_remarks" rows="3">${t.remarks || ""}</textarea></div>
       </form>`;
     document.getElementById("btnEdit").classList.add("d-none");
     document.getElementById("btnSave").classList.remove("d-none");
@@ -332,36 +407,30 @@
     const t = loadTasks().find(x=>x.id===id); if(!t) return;
     window.currentId = id;
     renderDetail(t);
-    new bootstrap.Modal(document.getElementById("taskModal")).show();
+    modal.show();
   }
 
   document.getElementById("btnEdit").addEventListener("click", ()=>{
     const t = loadTasks().find(x=>x.id===window.currentId); if(!t) return;
     renderEditForm(t);
   });
+
   document.getElementById("btnSave").addEventListener("click", ()=>{
     const tasks = loadTasks();
     const i = tasks.findIndex(x=>x.id===window.currentId); if(i<0) return;
     const v = (id)=> document.getElementById(id).value;
     tasks[i] = {
       ...tasks[i],
-      title: v("e_title"),
-      type: v("e_type"),
-      assignee: v("e_assignee"),
-      startPlanned: v("e_startPlanned"),
-      startActual: v("e_startActual"),
-      endPlanned: v("e_endPlanned"),
-      endActual: v("e_endActual"),
-      status: v("e_status"),
-      remarks: v("e_remarks")
+      title: v("e_title"), type: v("e_type"), assignee: v("e_assignee"),
+      startPlanned: v("e_startPlanned"), startActual: v("e_startActual"),
+      endPlanned: v("e_endPlanned"), endActual: v("e_endActual"),
+      status: v("e_status"), remarks: v("e_remarks")
     };
     saveTasks(tasks);
     renderDetail(tasks[i]);
     renderAll();
   });
-
-  // ---- Utilities & render orchestrator ----
-  function toISO(d){ return new Date(d).toISOString().slice(0,10); }
+  
   function renderAll(){
     const list = loadTasks();
     renderKanban(list);
@@ -373,10 +442,10 @@
   // init
   renderAll();
 
-  // refresh heavy views after tab shown
   document.getElementById("viewTabs").addEventListener("shown.bs.tab", (e)=>{
     const target = e.target.getAttribute("data-bs-target");
-    if(target==="#tab-gantt" || target==="#tab-calendar"){ renderAll(); }
+    if(target==="#tab-gantt") { renderGantt(loadTasks()); }
+    else if(target==="#tab-calendar") { renderCalendar(loadTasks()); }
   });
   </script>
 </body>

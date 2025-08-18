@@ -6,9 +6,24 @@
   <title>Era - タスク生成</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
-    :root{ --bs-primary:#00BFFF; }
-    body{ background:#fff; padding-top:70px; }
-    .nav-link.active, .btn-primary{ background:#00BFFF; border-color:#00BFFF; }
+    :root {
+      --bs-primary: #007BFF;
+      --bs-light-gray: #f8f9fa;
+    }
+    body {
+      background-color: var(--bs-light-gray);
+      padding-top: 70px;
+    }
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    }
+    .form-wrapper {
+        background-color: #fff;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.06);
+        border: 1px solid #dee2e6;
+    }
   </style>
 </head>
 <body>
@@ -24,61 +39,68 @@
   </nav>
 
   <main class="container py-4">
-    <h1 class="h4 mb-3">タスク生成</h1>
-    <form id="taskForm" class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label">タスク名称</label>
-        <input class="form-control" id="title" required />
-      </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <div class="form-wrapper">
+                <h1 class="h4 mb-4 text-center">新しいタスクの作成</h1>
+                <form id="taskForm" class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">タスク名称</label>
+                    <input class="form-control" id="title" required />
+                  </div>
 
-      <div class="col-md-3">
-        <label class="form-label">タスク種類</label>
-        <select class="form-select" id="type">
-          <option>木工事</option><option>配管</option><option>電気</option><option>内装</option><option>外構</option>
-        </select>
-      </div>
+                  <div class="col-md-6">
+                    <label class="form-label">タスク種類</label>
+                    <select class="form-select" id="type">
+                      <option>木工事</option><option>配管</option><option>電気</option><option>内装</option><option>外構</option>
+                    </select>
+                  </div>
 
-      <div class="col-md-3">
-        <label class="form-label">担当者</label>
-        <select class="form-select" id="assignee">
-          <option>菊池</option><option>佐藤</option><option>田中</option><option>鈴木</option><option>高橋</option>
-        </select>
-      </div>
+                  <div class="col-md-6">
+                    <label class="form-label">担当者</label>
+                    <select class="form-select" id="assignee">
+                      <option>菊池</option><option>佐藤</option><option>田中</option><option>鈴木</option><option>高橋</option>
+                    </select>
+                  </div>
 
-      <div class="col-md-3">
-        <label class="form-label">開始予定日</label>
-        <input type="date" class="form-control" id="startPlanned" required />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">開始実績日</label>
-        <input type="date" class="form-control" id="startActual" />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">完了予定日</label>
-        <input type="date" class="form-control" id="endPlanned" required />
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">完了実績日</label>
-        <input type="date" class="form-control" id="endActual" />
-      </div>
+                  <div class="col-md-6">
+                    <label class="form-label">開始予定日</label>
+                    <input type="date" class="form-control" id="startPlanned" required />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">完了予定日</label>
+                    <input type="date" class="form-control" id="endPlanned" required />
+                  </div>
+                  
+                  <div class="col-md-6">
+                    <label class="form-label">開始実績日</label>
+                    <input type="date" class="form-control" id="startActual" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">完了実績日</label>
+                    <input type="date" class="form-control" id="endActual" />
+                  </div>
 
-      <div class="col-md-3">
-        <label class="form-label">ステータス</label>
-        <select class="form-select" id="status">
-          <option>未着手</option><option>進行中</option><option>完了</option>
-        </select>
-      </div>
+                  <div class="col-md-6">
+                    <label class="form-label">ステータス</label>
+                    <select class="form-select" id="status">
+                      <option>未着手</option><option>進行中</option><option>完了</option>
+                    </select>
+                  </div>
 
-      <div class="col-12">
-        <label class="form-label">備考</label>
-        <textarea class="form-control" id="remarks" rows="3" placeholder="キッチンカウンターの下地造作をお願いします。"></textarea>
-      </div>
+                  <div class="col-12">
+                    <label class="form-label">備考</label>
+                    <textarea class="form-control" id="remarks" rows="3" placeholder="タスクに関する詳細や注意事項を記入..."></textarea>
+                  </div>
 
-      <div class="col-12">
-        <button class="btn btn-primary" type="submit">保存して一覧へ</button>
-        <a class="btn btn-outline-secondary" href="/admin/task-view">キャンセル</a>
-      </div>
-    </form>
+                  <div class="col-12 d-flex justify-content-end gap-2 mt-4">
+                    <a class="btn btn-outline-secondary" href="/admin/task-view">キャンセル</a>
+                    <button class="btn btn-primary" type="submit">保存して一覧へ</button>
+                  </div>
+                </form>
+            </div>
+        </div>
+    </div>
   </main>
 
   <script>
@@ -88,8 +110,7 @@
       const id = t.id ?? Date.now()+i;
       const title = t.title ?? t.name ?? "";
       return {
-        id,
-        title,
+        id, title,
         type: t.type ?? t.workType ?? "",
         assignee: t.assignee ?? "",
         startPlanned: t.startPlanned ?? t.start ?? "",
@@ -123,9 +144,13 @@
       progress: 0,
       tags: []
     };
-    tasks.push(data);
-    saveTasks(tasks);
-    location.href="/admin/task-view";
+    if (data.title && data.startPlanned && data.endPlanned) {
+        tasks.push(data);
+        saveTasks(tasks);
+        location.href="/admin/task-view";
+    } else {
+        alert("必須項目をすべて入力してください。");
+    }
   });
   </script>
 </body>
